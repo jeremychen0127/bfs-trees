@@ -8,7 +8,7 @@ import java.util.TreeMap;
 
 import util.Pair.PairComparator;
 
-public class UtilsTester {
+public class HistogramBuilder {
 
   public static void main(String[] args) throws NumberFormatException, IOException {
 //    long javaMaxArraySize = Integer.MAX_VALUE - 5;
@@ -114,6 +114,7 @@ public class UtilsTester {
       + ((double) numEqual/numTrials));
     System.out.println("totalTimeForBiDirSSSDSP: " + totalTimeForBiDirSSSDSP +
       " totalTimeForSearchInBFSTrees: " + totalTimeForSearchInBFSTrees);
+    System.out.println("============== Histogram ==============");
     for (Map.Entry<Integer, Integer> entry: histogram.entrySet()) {
       System.out.println("Difference: " + entry.getKey()
         + ", # of Queries: " + entry.getValue());
