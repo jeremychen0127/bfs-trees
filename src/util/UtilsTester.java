@@ -2,7 +2,9 @@ package util;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Random;
+import java.util.TreeMap;
 
 import util.Pair.PairComparator;
 
@@ -68,6 +70,7 @@ public class UtilsTester {
     int numEqual = 0;
     long totalTimeForBiDirSSSDSP = 0;
     long totalTimeForSearchInBFSTrees = 0;
+    TreeMap<Integer, Integer> histogram = new TreeMap<>();
     for (int i = 0; i < numTrials; ++i) {
       if (i > 0 && (i % 1000) == 0) { 
         System.out.println("Starting " + i + "th trial. numEqual: " + numEqual + " percentage: "
@@ -83,6 +86,7 @@ public class UtilsTester {
       totalTimeForBiDirSSSDSP += (endTime - startTime);
       startTime = System.nanoTime();
       distInBFSTrees = Integer.MAX_VALUE;
+
       for (int j = 0; j < numHighDegreeBFSTrees + numRandomBFSTrees; ++j) {
         tmpDist = Utils.distanceInBFSTree(bfsTrees[j], src, dst);
         if (tmpDist < distInBFSTrees) {
@@ -97,10 +101,22 @@ public class UtilsTester {
       if (distInBFSTrees == actualDist) {
         numEqual++;
       }
+
+      Integer difference = distInBFSTrees - actualDist;
+      if (histogram.containsKey(difference)) {
+        Integer oldValue = histogram.get(difference);
+        histogram.put(difference, oldValue + 1);
+      } else {
+        histogram.put(difference, 1);
+      }
     }
     System.out.println("FINISHED! numEqual: " + numEqual + " percentage: "
       + ((double) numEqual/numTrials));
     System.out.println("totalTimeForBiDirSSSDSP: " + totalTimeForBiDirSSSDSP +
       " totalTimeForSearchInBFSTrees: " + totalTimeForSearchInBFSTrees);
+    for (Map.Entry<Integer, Integer> entry: histogram.entrySet()) {
+      System.out.println("Difference: " + entry.getKey()
+        + ", # of Queries: " + entry.getValue());
+    }
   }
 }
