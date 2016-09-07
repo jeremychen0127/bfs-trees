@@ -204,6 +204,39 @@ public class Utils {
     return length + 2;
   }
 
+  public static boolean isPathThroughRoot(SimpleBFSData bfsData, int source, int destination) {
+    int currentLevelOfSrc = bfsData.bfsLevel[source];
+    int currentParentOfSrc = bfsData.bfsParent[source];
+    int currentV = source;
+    int levelofDest = bfsData.bfsLevel[destination];
+    if (currentLevelOfSrc == -1 || levelofDest == -1) {
+      return false;
+    }
+    int currentParentOfDest = bfsData.bfsParent[destination];
+
+    while (currentLevelOfSrc > levelofDest) {
+      currentLevelOfSrc--;
+      currentV = currentParentOfSrc;
+      currentParentOfSrc = bfsData.bfsParent[currentParentOfSrc];
+    }
+    while (levelofDest > currentLevelOfSrc) {
+      levelofDest--;
+      destination = currentParentOfDest;
+      currentParentOfDest = bfsData.bfsParent[currentParentOfDest];
+    }
+
+    if (currentV == destination) {
+      return currentV == bfsData.source;
+    }
+
+    while(currentParentOfSrc != currentParentOfDest) {
+      currentParentOfSrc = bfsData.bfsParent[currentParentOfSrc];
+      currentParentOfDest = bfsData.bfsParent[currentParentOfDest];
+    }
+
+    return currentParentOfSrc == bfsData.source;
+  }
+
 //  public static int[] getParallelCRSBFSDistances(int[][]graph, CRSGraph crsGraph, int source,
 //     int pL) {
 //    return new ParallelBFSRunner(graph, source, pL, crsGraph).computeBFSInParallel();

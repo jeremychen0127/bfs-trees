@@ -70,6 +70,7 @@ public class HistogramBuilder {
     int numEqual = 0;
     long totalTimeForBiDirSSSDSP = 0;
     long totalTimeForSearchInBFSTrees = 0;
+    int numPathsThroughBFSRoot = 0;
     TreeMap<Integer, Integer> histogram = new TreeMap<>();
     for (int i = 0; i < numTrials; ++i) {
       if (i > 0 && (i % 1000) == 0) { 
@@ -89,9 +90,10 @@ public class HistogramBuilder {
 
       for (int j = 0; j < numHighDegreeBFSTrees + numRandomBFSTrees; ++j) {
         tmpDist = Utils.distanceInBFSTree(bfsTrees[j], src, dst);
-        if (tmpDist < distInBFSTrees) {
+        if (tmpDist <= distInBFSTrees) {
           distInBFSTrees = tmpDist;
-          if (distInBFSTrees == actualDist) {
+          if (distInBFSTrees == actualDist && Utils.isPathThroughRoot(bfsTrees[j], src, dst)) {
+            numPathsThroughBFSRoot++;
             break;
           }
         }
@@ -115,6 +117,8 @@ public class HistogramBuilder {
     System.out.println("totalTimeForBiDirSSSDSP: " + totalTimeForBiDirSSSDSP +
       " totalTimeForSearchInBFSTrees: " + totalTimeForSearchInBFSTrees);
     System.out.println("============== Histogram ==============");
+    System.out.println("# of shortest paths in BFS through root: " + numPathsThroughBFSRoot +
+      ", Percentage: " + ((double) numPathsThroughBFSRoot/numEqual));
     for (Map.Entry<Integer, Integer> entry: histogram.entrySet()) {
       System.out.println("Difference: " + entry.getKey()
         + ", # of Queries: " + entry.getValue());
