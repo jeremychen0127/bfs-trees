@@ -98,6 +98,8 @@ public class Utils {
     int src, dst, srcDegree, newDegreeSize;
     int numLinesRead = 0;
     long startTime = System.currentTimeMillis();
+
+    // Reads the graph file line by line and construct graph data accordingly
     while ((strLine = br.readLine()) != null) {
       numLinesRead++;
       if ((numLinesRead % 100000) == 0) {
@@ -110,8 +112,12 @@ public class Utils {
         continue;
       }
       String[] split = strLine.split("\\s+");
+
+      // Gets the index node
       src = Integer.parseInt(split[0]);
       srcDegree = degrees[src];
+
+      // Initializes neighbours of the index node
       if ((srcDegree + split.length - 1) > graph[src].length) {
         newDegreeSize = Math.max(srcDegree + split.length - 1,
           (int) Math.round(graph[src].length*1.2));
@@ -119,6 +125,8 @@ public class Utils {
         System.arraycopy(graph[src], 0, newNeighbors, 0, graph[src].length);
         graph[src] = newNeighbors;
       }
+
+      // Constructs neighbours of the index node
       for (int j = 1; j < split.length; ++j) {
         dst = Integer.parseInt(split[j]);
         graph[src][srcDegree++] = dst;
@@ -165,6 +173,8 @@ public class Utils {
     int currentParentOfDest = bfsData.bfsParent[destination];
     int length = 0;
 //    System.out.println("currentLevelOfSrc: " + currentLevelOfSrc + " levelofDest: " + levelofDest);
+
+    // Calculates the level offset of the source and destination
     while (currentLevelOfSrc > levelofDest) {
       currentLevelOfSrc--;
       currentV = currentParentOfSrc;
