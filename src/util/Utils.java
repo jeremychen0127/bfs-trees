@@ -48,7 +48,7 @@ public class Utils {
     int maxID = -1;
     int src, dst;
     while ((strLine = br.readLine()) != null) {
-      if (strLine.startsWith("#")) {
+      if (strLine.startsWith("#") || strLine.trim().isEmpty()) {
         continue;
       }
       String[] split = strLine.split("\\s+");
