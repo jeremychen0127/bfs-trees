@@ -1,6 +1,7 @@
 package util;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
@@ -66,12 +67,13 @@ public class HistogramBuilder {
       + " BFS TREES: " + ((endTime - startTime)/1000));
     System.out.println("AVG TIME TAKEN TO CONSTRUCT 1 BFS TREE: "
       + ((endTime - startTime)/(1000*totalNumBFSTrees)));
-    int src, dst, distInBFSTrees, actualDist, tmpDist;
+    int src, dst;
+    BigInteger tmpDist, distInBFSTrees, actualDist;
     int numEqual = 0;
     long totalTimeForBiDirSSSDSP = 0;
     long totalTimeForSearchInBFSTrees = 0;
     int numPathsThroughBFSRoot = 0;
-    TreeMap<Integer, Integer> histogram = new TreeMap<>();
+    TreeMap<BigInteger, Integer> histogram = new TreeMap<>();
     for (int i = 0; i < numTrials; ++i) {
       if (i > 0 && (i % 1000) == 0) { 
         System.out.println("Starting " + i + "th trial. numEqual: " + numEqual + " percentage: "
@@ -82,17 +84,17 @@ public class HistogramBuilder {
       src = random.nextInt(graph.length);
       dst = random.nextInt(graph.length);
       startTime = System.nanoTime();
-      actualDist = Utils.getSSSDSPBiDirBFS(graph, src, dst);
+      actualDist = BigInteger.valueOf(Utils.getSSSDSPBiDirBFS(graph, src, dst));
       endTime = System.nanoTime();
       totalTimeForBiDirSSSDSP += (endTime - startTime);
       startTime = System.nanoTime();
-      distInBFSTrees = Integer.MAX_VALUE;
+      distInBFSTrees = BigInteger.valueOf(Long.MAX_VALUE);
 
       for (int j = 0; j < numHighDegreeBFSTrees + numRandomBFSTrees; ++j) {
-        tmpDist = Utils.distanceInBFSTree(bfsTrees[j], src, dst);
-        if (tmpDist <= distInBFSTrees) {
+        tmpDist = BigInteger.valueOf(Utils.distanceInBFSTree(bfsTrees[j], src, dst));
+        if (tmpDist.compareTo(distInBFSTrees) <= 0) {
           distInBFSTrees = tmpDist;
-          if (distInBFSTrees == actualDist && Utils.isPathThroughRoot(bfsTrees[j], src, dst)) {
+          if (distInBFSTrees.equals(actualDist) && Utils.isPathThroughRoot(bfsTrees[j], src, dst)) {
             numPathsThroughBFSRoot++;
             break;
           }
@@ -100,11 +102,11 @@ public class HistogramBuilder {
       }
       endTime = System.nanoTime();
       totalTimeForSearchInBFSTrees += (endTime - startTime);
-      if (distInBFSTrees == actualDist) {
+      if (distInBFSTrees.equals(actualDist)) {
         numEqual++;
       }
 
-      Integer difference = distInBFSTrees - actualDist;
+      BigInteger difference = distInBFSTrees.subtract(actualDist);
       if (histogram.containsKey(difference)) {
         Integer oldValue = histogram.get(difference);
         histogram.put(difference, oldValue + 1);
@@ -119,7 +121,7 @@ public class HistogramBuilder {
     System.out.println("============== Histogram ==============");
     System.out.println("# of shortest paths in BFS through root: " + numPathsThroughBFSRoot +
       ", Percentage: " + ((double) numPathsThroughBFSRoot/numEqual));
-    for (Map.Entry<Integer, Integer> entry: histogram.entrySet()) {
+    for (Map.Entry<BigInteger, Integer> entry: histogram.entrySet()) {
       System.out.println("Difference: " + entry.getKey()
         + ", # of Queries: " + entry.getValue());
     }
