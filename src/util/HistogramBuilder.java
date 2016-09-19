@@ -126,9 +126,20 @@ public class HistogramBuilder {
         histogram.put(difference, 1);
       }
     }
+
+    int numVerticesOfLargestComp = 0;
+    for (int i = 0; i < numHighDegreeBFSTrees + numRandomBFSTrees; ++i) {
+      System.out.println("numVerticesInBFSTree of source " + bfsTrees[i].source + ": " + bfsTrees[i].numVertices);
+      if (bfsTrees[i].numVertices > numVerticesOfLargestComp) {
+        numVerticesOfLargestComp = bfsTrees[i].numVertices;
+      }
+    }
+
     System.out.println("FINISHED!");
     System.out.println("totalTimeForBiDirSSSDSP: " + totalTimeForBiDirSSSDSP +
       " totalTimeForSearchInBFSTrees: " + totalTimeForSearchInBFSTrees);
+    System.out.println("# of vertices in largest component / # of vertices: " +
+      ((double)numVerticesOfLargestComp/graph.length));
     System.out.println("============== Histogram & Stats ==============");
     System.out.println("# of queries within same component: " + (numTrials - numQueriesAcrossComponents));
     System.out.println("Percentage of BFS paths are shortest paths: " + ((double) numEqual/(numTrials-numQueriesAcrossComponents)));

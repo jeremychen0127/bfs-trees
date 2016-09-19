@@ -5,10 +5,13 @@ public class SimpleBFSData {
   public int[] bfsParent = null;
   public int source;
 
+  public int numVertices;
+
   public SimpleBFSData(int numV, int source) {
     bfsLevel = new int[numV];
     bfsParent = new int[numV];
     this.source = source;
+    this.numVertices = 1;
   }
   
   public void initializeBFSData() {

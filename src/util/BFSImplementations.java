@@ -62,6 +62,7 @@ public class BFSImplementations {
       for (int nbr : graph[nextVertex]) {
         if (-1 == bfsData.bfsLevel[nbr]) {
           bfsQueue.add(nbr);
+          bfsData.numVertices++;
           bfsData.bfsLevel[nbr] = currentDist + 1;
           bfsData.bfsParent[nbr] = nextVertex;
         }
