@@ -2,6 +2,7 @@ package util;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
@@ -69,11 +70,17 @@ public class HistogramBuilder {
       + ((endTime - startTime)/(1000*totalNumBFSTrees)));
     int src, dst, tmpDist, distInBFSTrees, actualDist;
     int numEqual = 0;
-    int numQueriesAcrossComponents = 0;
     long totalTimeForBiDirSSSDSP = 0;
     long totalTimeForSearchInBFSTrees = 0;
-    int numPathsThroughBFSRoot = 0;
-    TreeMap<Integer, Integer> histogram = new TreeMap<>();
+
+    ArrayList<ArrayList<Integer> > histograms = new ArrayList<>();
+    int[] numPathsThroughBFSRoot = new int[numHighDegreeBFSTrees + numRandomBFSTrees];
+    int[] numQueriesAcrossComponents = new int[numHighDegreeBFSTrees + numRandomBFSTrees];
+    boolean thruRootRecorded = false;
+    for (int i = 0; i < numHighDegreeBFSTrees + numRandomBFSTrees; ++i) {
+      histograms.add(i, new ArrayList<Integer>());
+    }
+
     for (int i = 0; i < numTrials; ++i) {
       if (i > 0 && (i % 1000) == 0) { 
         System.out.println("Starting " + i + "th trial. numEqual: " + numEqual + " percentage: "
@@ -81,6 +88,8 @@ public class HistogramBuilder {
         System.out.println("totalTimeForBiDirSSSDSP: " + totalTimeForBiDirSSSDSP +
           " totalTimeForSearchInBFSTrees: " + totalTimeForSearchInBFSTrees);
       }
+
+      thruRootRecorded = false;
 
       // Generates random queries from s to t with s != t
       src = random.nextInt(graph.length);
@@ -100,30 +109,36 @@ public class HistogramBuilder {
         tmpDist = Utils.distanceInBFSTree(bfsTrees[j], src, dst);
         if (tmpDist <= distInBFSTrees) {
           distInBFSTrees = tmpDist;
-          if (distInBFSTrees == actualDist && Utils.isPathThroughRoot(bfsTrees[j], src, dst)) {
-            numPathsThroughBFSRoot++;
-            break;
+        }
+
+        if (!thruRootRecorded && distInBFSTrees == actualDist && Utils.isPathThroughRoot(bfsTrees[j], src, dst)) {
+          numPathsThroughBFSRoot[j]++;
+          thruRootRecorded = true;
+        }
+
+        if (distInBFSTrees == Integer.MAX_VALUE) {
+          System.out.println("Queries across from diff connected components: " + src + " to " + dst);
+          numQueriesAcrossComponents[j]++;
+        } else {
+          Integer difference = distInBFSTrees - actualDist;
+          ArrayList<Integer> granularHistogram = histograms.get(j);
+          if (difference < granularHistogram.size()) {
+            granularHistogram.set(difference, granularHistogram.get(difference) + 1);
+          } else {
+            // Add missing rows in the histogram
+            for (int k = 0; k < difference - granularHistogram.size(); ++k) {
+              granularHistogram.add(0);
+            }
+
+            granularHistogram.add(1);
           }
+          histograms.set(j, granularHistogram);
         }
       }
       endTime = System.nanoTime();
       totalTimeForSearchInBFSTrees += (endTime - startTime);
       if (distInBFSTrees == actualDist) {
         numEqual++;
-      }
-
-      if (distInBFSTrees == Integer.MAX_VALUE) {
-        System.out.println("Queries across from diff connected components: " + src + " to " + dst);
-        numQueriesAcrossComponents++;
-        continue;
-      }
-
-      Integer difference = distInBFSTrees - actualDist;
-      if (histogram.containsKey(difference)) {
-        Integer oldValue = histogram.get(difference);
-        histogram.put(difference, oldValue + 1);
-      } else {
-        histogram.put(difference, 1);
       }
     }
 
@@ -133,6 +148,10 @@ public class HistogramBuilder {
       if (bfsTrees[i].numVertices > numVerticesOfLargestComp) {
         numVerticesOfLargestComp = bfsTrees[i].numVertices;
       }
+
+      if (i >= 1) {
+        numPathsThroughBFSRoot[i] += numPathsThroughBFSRoot[i - 1];
+      }
     }
 
     System.out.println("FINISHED!");
@@ -140,14 +159,18 @@ public class HistogramBuilder {
       " totalTimeForSearchInBFSTrees: " + totalTimeForSearchInBFSTrees);
     System.out.println("# of vertices in largest component / # of vertices: " +
       ((double)numVerticesOfLargestComp/graph.length));
-    System.out.println("============== Histogram & Stats ==============");
-    System.out.println("# of queries within same component: " + (numTrials - numQueriesAcrossComponents));
-    System.out.println("Percentage of BFS paths are shortest paths: " + ((double) numEqual/(numTrials-numQueriesAcrossComponents)));
-    System.out.println("# of shortest paths in BFS through root: " + numPathsThroughBFSRoot +
-      ", Percentage: " + ((double) numPathsThroughBFSRoot/numEqual));
-    for (Map.Entry<Integer, Integer> entry: histogram.entrySet()) {
-      System.out.println("Difference: " + entry.getKey()
-        + ", # of Queries: " + entry.getValue());
+    for (int i = 0; i < numHighDegreeBFSTrees + numRandomBFSTrees; ++i) {
+      ArrayList<Integer> granularHistogram = histograms.get(i);
+      System.out.println("============== Histogram & Stats (" + (i + 1) + " trees)==============");
+      System.out.println("# of queries within same component: " + (numTrials - numQueriesAcrossComponents[i]));
+      System.out.println("Percentage of BFS paths are shortest paths: " +
+        ((double) granularHistogram.get(0)/(numTrials-numQueriesAcrossComponents[i])));
+      System.out.println("# of shortest paths in BFS through root: " + numPathsThroughBFSRoot[i] +
+        ", Percentage: " + ((double) numPathsThroughBFSRoot[i]/granularHistogram.get(0)));
+
+      for (int j = 0; j < granularHistogram.size(); ++j) {
+        System.out.println("Difference: " + j + ", # of Queries: " + granularHistogram.get(j));
+      }
     }
   }
 }
