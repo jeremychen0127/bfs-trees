@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
+import java.util.UnknownFormatConversionException;
 
 import util.Pair.PairComparator;
 
@@ -26,12 +27,15 @@ public class HistogramBuilder {
     int numHighDegreeBFSTrees = Integer.parseInt(args[1]);
     int numRandomBFSTrees = Integer.parseInt(args[2]);
     int numTrials = Integer.parseInt(args[3]);
+    boolean isDirectedGraph = Boolean.parseBoolean(args[4]);
     System.out.println("graphFile:" + graphFile);
     System.out.println("numHighDegreeBFSTrees:" + numHighDegreeBFSTrees);
     System.out.println("numRandomBFSTrees:" + numRandomBFSTrees);
     System.out.println("numTrials: " + numTrials);
+    System.out.println("directed: " + isDirectedGraph);
     long startTime = System.currentTimeMillis();
     int[][] graph = Utils.getGraph(graphFile);
+    int[][] revGraph = Utils.reverseGraph(graph);
     long endTime = System.currentTimeMillis();
     System.out.println("TIME TAKEN TO PARSE THE GRAPH: " + ((endTime - startTime)/1000));
     PairComparator degreeComparator = new PairComparator();
@@ -45,10 +49,14 @@ public class HistogramBuilder {
     System.out.println("TIME TAKEN TO SORT DEGREES: " + ((endTime - startTime)/1000));
 
     SimpleBFSData[] bfsTrees = new SimpleBFSData[numHighDegreeBFSTrees + numRandomBFSTrees];
+    SimpleBFSData[] revBfsTrees = new SimpleBFSData[numHighDegreeBFSTrees + numRandomBFSTrees];
     startTime = System.currentTimeMillis(); 
     for (int i = 0; i < numHighDegreeBFSTrees; ++i) {
       System.out.println("Source of High Degree BFS Tree vertex: " + idDegrees[idDegrees.length - (i + 1)].id);
       bfsTrees[i] = BFSImplementations.getBFSTree(graph, idDegrees[idDegrees.length - (i + 1)].id);
+      if (isDirectedGraph) {
+        revBfsTrees[i] = BFSImplementations.getBFSTree(revGraph, idDegrees[idDegrees.length - (i + 1)].id);
+      }
     }
 
     Random random = new Random(0);
@@ -60,6 +68,9 @@ public class HistogramBuilder {
       } else {
         System.out.println("Source of Random BFS Tree vertex: " + nextSrc);
         bfsTrees[numHighDegreeBFSTrees + i] = BFSImplementations.getBFSTree(graph, nextSrc);
+        if (isDirectedGraph) {
+          revBfsTrees[numHighDegreeBFSTrees + i] = BFSImplementations.getBFSTree(revGraph, nextSrc);
+        }
       }
     }
     endTime = System.currentTimeMillis();
@@ -99,14 +110,23 @@ public class HistogramBuilder {
         dst = random.nextInt(graph.length);
       }
       startTime = System.nanoTime();
-      actualDist = Utils.getSSSDSPBiDirBFS(graph, src, dst);
+      if (isDirectedGraph) {
+        actualDist = Utils.getSSSDSPBiDirBFSDirGraph(graph, revGraph, src, dst);
+      } else {
+        actualDist = Utils.getSSSDSPBiDirBFS(graph, src, dst);
+      }
       endTime = System.nanoTime();
       totalTimeForBiDirSSSDSP += (endTime - startTime);
       startTime = System.nanoTime();
       distInBFSTrees = Integer.MAX_VALUE;
 
       for (int j = 0; j < numHighDegreeBFSTrees + numRandomBFSTrees; ++j) {
-        tmpDist = Utils.distanceInBFSTree(bfsTrees[j], src, dst);
+        if (isDirectedGraph) {
+          tmpDist = Utils.distanceInDirBFSTree(bfsTrees[j], revBfsTrees[j], src, dst);
+        } else {
+          tmpDist = Utils.distanceInBFSTree(bfsTrees[j], src, dst);
+        }
+
         if (tmpDist <= distInBFSTrees) {
           distInBFSTrees = tmpDist;
         }
@@ -116,11 +136,14 @@ public class HistogramBuilder {
           thruRootRecorded = true;
         }
 
-        if (distInBFSTrees == Integer.MAX_VALUE) {
-          System.out.println("Queries across from diff connected components: " + src + " to " + dst);
+        if (distInBFSTrees == Integer.MAX_VALUE || actualDist == -1) {
+          System.out.println("Path does not exist: " + src + " to " + dst + " in tree with source " + bfsTrees[j].source);
           numQueriesAcrossComponents[j]++;
         } else {
           Integer difference = distInBFSTrees - actualDist;
+          if (difference < 0) {
+            System.out.println("distInTree: " + distInBFSTrees + ", actualDist: " + actualDist);
+          }
           ArrayList<Integer> granularHistogram = histograms.get(j);
           if (difference < granularHistogram.size()) {
             granularHistogram.set(difference, granularHistogram.get(difference) + 1);
@@ -162,11 +185,16 @@ public class HistogramBuilder {
     for (int i = 0; i < numHighDegreeBFSTrees + numRandomBFSTrees; ++i) {
       ArrayList<Integer> granularHistogram = histograms.get(i);
       System.out.println("============== Histogram & Stats (" + (i + 1) + " trees)==============");
-      System.out.println("# of queries within same component: " + (numTrials - numQueriesAcrossComponents[i]));
-      System.out.println("Percentage of BFS paths are shortest paths: " +
-        ((double) granularHistogram.get(0)/(numTrials-numQueriesAcrossComponents[i])));
-      System.out.println("# of shortest paths in BFS through root: " + numPathsThroughBFSRoot[i] +
-        ", Percentage: " + ((double) numPathsThroughBFSRoot[i]/granularHistogram.get(0)));
+      System.out.println("# of queries that have paths: " + (numTrials - numQueriesAcrossComponents[i]));
+      if (granularHistogram.isEmpty()) {
+        System.out.println("Percentage of BFS paths are shortest paths: N/A");
+        System.out.println("None of queries has a path");
+      } else {
+        System.out.println("Percentage of BFS paths are shortest paths: " +
+          ((double) granularHistogram.get(0) / (numTrials - numQueriesAcrossComponents[i])));
+        System.out.println("# of shortest paths in BFS through root: " + numPathsThroughBFSRoot[i] +
+          ", Percentage: " + ((double) numPathsThroughBFSRoot[i] / granularHistogram.get(0)));
+      }
 
       for (int j = 0; j < granularHistogram.size(); ++j) {
         System.out.println("Difference: " + j + ", # of Queries: " + granularHistogram.get(j));
