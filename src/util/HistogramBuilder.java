@@ -35,7 +35,7 @@ public class HistogramBuilder {
     System.out.println("directed: " + isDirectedGraph);
     long startTime = System.currentTimeMillis();
     int[][] graph = Utils.getGraph(graphFile);
-    int[][] revGraph;
+    int[][] revGraph = new int[graph.length][];
     if (isDirectedGraph) {
       revGraph = Utils.reverseGraph(graph);
     }
