@@ -35,7 +35,10 @@ public class HistogramBuilder {
     System.out.println("directed: " + isDirectedGraph);
     long startTime = System.currentTimeMillis();
     int[][] graph = Utils.getGraph(graphFile);
-    int[][] revGraph = Utils.reverseGraph(graph);
+    int[][] revGraph;
+    if (isDirectedGraph) {
+      revGraph = Utils.reverseGraph(graph);
+    }
     long endTime = System.currentTimeMillis();
     System.out.println("TIME TAKEN TO PARSE THE GRAPH: " + ((endTime - startTime)/1000));
     PairComparator degreeComparator = new PairComparator();
