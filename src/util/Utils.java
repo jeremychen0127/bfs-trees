@@ -150,6 +150,7 @@ public class Utils {
   }
 
   public static int[][] reverseGraph(int[][] graph) {
+    System.out.println("Generating reversed graph...");
     int[][] reversedGraph = new int[graph.length][];
     int[] degrees = new int[graph.length];
     for (int i = 0; i < degrees.length; ++i) { degrees[i] = 0; reversedGraph[i] = new int[0];}
@@ -164,7 +165,13 @@ public class Utils {
         newNeighbors[degrees[neighbor] - 1] = i;
         reversedGraph[neighbor]= newNeighbors;
       }
+
+      if ((i % 10000) == 0) {
+        System.out.println(i + " vertices have been process");
+      }
     }
+
+    System.out.println("Reversed graph generated");
 
     return reversedGraph;
   }
