@@ -34,7 +34,7 @@ public class DirectedToUndirectedGraphConverter {
       if ((numLinesParsed % 100000) == 0) {
         System.out.println("Parsed " + numLinesParsed + "th line...");
       }
-      if (strLine.startsWith("#")) {
+      if (strLine.startsWith("#") || strLine.trim().isEmpty()) {
         continue;
       }
       String[] split = strLine.split("\\s+");

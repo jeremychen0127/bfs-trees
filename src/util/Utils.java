@@ -48,7 +48,7 @@ public class Utils {
     int maxID = -1;
     int src, dst;
     while ((strLine = br.readLine()) != null) {
-      if (strLine.startsWith("#")) {
+      if (strLine.startsWith("#") || strLine.trim().isEmpty()) {
         continue;
       }
       String[] split = strLine.split("\\s+");
@@ -98,6 +98,8 @@ public class Utils {
     int src, dst, srcDegree, newDegreeSize;
     int numLinesRead = 0;
     long startTime = System.currentTimeMillis();
+
+    // Reads the graph file line by line and construct graph data accordingly
     while ((strLine = br.readLine()) != null) {
       numLinesRead++;
       if ((numLinesRead % 100000) == 0) {
@@ -110,8 +112,12 @@ public class Utils {
         continue;
       }
       String[] split = strLine.split("\\s+");
+
+      // Gets the index node
       src = Integer.parseInt(split[0]);
       srcDegree = degrees[src];
+
+      // Initializes neighbours of the index node
       if ((srcDegree + split.length - 1) > graph[src].length) {
         newDegreeSize = Math.max(srcDegree + split.length - 1,
           (int) Math.round(graph[src].length*1.2));
@@ -119,6 +125,8 @@ public class Utils {
         System.arraycopy(graph[src], 0, newNeighbors, 0, graph[src].length);
         graph[src] = newNeighbors;
       }
+
+      // Constructs neighbours of the index node
       for (int j = 1; j < split.length; ++j) {
         dst = Integer.parseInt(split[j]);
         graph[src][srcDegree++] = dst;
@@ -139,6 +147,33 @@ public class Utils {
     System.out.println("maxID (close to numV): " + maxID + " maxDegree: " + maxDegree + " numE: "
       + numEdges + " numE/numV: " + ((double) numEdges)/(double) maxID);
     return graph;
+  }
+
+  public static int[][] reverseGraph(int[][] graph) {
+    System.out.println("Generating reversed graph...");
+    int[][] reversedGraph = new int[graph.length][];
+    int[] degrees = new int[graph.length];
+    for (int i = 0; i < degrees.length; ++i) { degrees[i] = 0; reversedGraph[i] = new int[0];}
+
+    for(int i = 0; i < graph.length; ++i) {
+      int[] currentNeighbors = graph[i];
+      for(int j = 0; j < currentNeighbors.length; ++j) {
+        int neighbor = currentNeighbors[j];
+        degrees[neighbor]++;
+        int[] newNeighbors = new int[degrees[neighbor]];
+        System.arraycopy(reversedGraph[neighbor], 0, newNeighbors, 0, reversedGraph[neighbor].length);
+        newNeighbors[degrees[neighbor] - 1] = i;
+        reversedGraph[neighbor]= newNeighbors;
+      }
+
+      if ((i % 10000) == 0) {
+        System.out.println(i + " vertices have been process");
+      }
+    }
+
+    System.out.println("Reversed graph generated");
+
+    return reversedGraph;
   }
   
   public static int getMaxDegreeVertex(int[][] graph) {
@@ -165,6 +200,8 @@ public class Utils {
     int currentParentOfDest = bfsData.bfsParent[destination];
     int length = 0;
 //    System.out.println("currentLevelOfSrc: " + currentLevelOfSrc + " levelofDest: " + levelofDest);
+
+    // Calculates the level offset of the source and destination
     while (currentLevelOfSrc > levelofDest) {
       currentLevelOfSrc--;
       currentV = currentParentOfSrc;
@@ -191,6 +228,92 @@ public class Utils {
       currentParentOfSrc = bfsData.bfsParent[currentParentOfSrc];      
       currentParentOfDest = bfsData.bfsParent[currentParentOfDest];
     }
+    return length + 2;
+  }
+
+  public static boolean isPathThroughRoot(SimpleBFSData bfsData, int source, int destination) {
+    int currentLevelOfSrc = bfsData.bfsLevel[source];
+    int currentParentOfSrc = bfsData.bfsParent[source];
+    int currentV = source;
+    int levelofDest = bfsData.bfsLevel[destination];
+    if (currentLevelOfSrc == -1 || levelofDest == -1) {
+      return false;
+    }
+    int currentParentOfDest = bfsData.bfsParent[destination];
+
+    while (currentLevelOfSrc > levelofDest) {
+      currentLevelOfSrc--;
+      currentV = currentParentOfSrc;
+      currentParentOfSrc = bfsData.bfsParent[currentParentOfSrc];
+    }
+    while (levelofDest > currentLevelOfSrc) {
+      levelofDest--;
+      destination = currentParentOfDest;
+      currentParentOfDest = bfsData.bfsParent[currentParentOfDest];
+    }
+
+    if (currentV == destination) {
+      return currentV == bfsData.source;
+    }
+
+    while(currentParentOfSrc != currentParentOfDest) {
+      currentParentOfSrc = bfsData.bfsParent[currentParentOfSrc];
+      currentParentOfDest = bfsData.bfsParent[currentParentOfDest];
+    }
+
+    return currentParentOfSrc == bfsData.source;
+  }
+
+  public static int distanceInDirBFSTree(SimpleBFSData origBfsData, SimpleBFSData revBfsData, int source, int destination) {
+    // find out which BFS that source vertex is in (orig vs reverse)
+    SimpleBFSData sourceBfsData = revBfsData;
+    boolean shouldBeSameBranch = false;
+    int currentLevelOfSrc = revBfsData.bfsLevel[source];
+    if (currentLevelOfSrc == -1) {
+      currentLevelOfSrc = origBfsData.bfsLevel[source];
+      shouldBeSameBranch = true;
+      sourceBfsData = origBfsData;
+    }
+
+    int currentParentOfSrc = sourceBfsData.bfsParent[source];
+    int currentLevelOfDest = origBfsData.bfsLevel[destination];
+    if (currentLevelOfSrc == -1 || currentLevelOfDest == -1) {
+      return Integer.MAX_VALUE;
+    }
+    int currentParentOfDest = origBfsData.bfsParent[destination];
+
+    int length = 0;
+    int currentV = source;
+//    System.out.println("src: " + source + ", dest: " + destination);
+    while (!shouldBeSameBranch && currentLevelOfSrc > currentLevelOfDest) {
+//      System.out.println("SrcParent: " + currentParentOfSrc);
+      currentLevelOfSrc--;
+      currentV = currentParentOfSrc;
+      currentParentOfSrc = sourceBfsData.bfsParent[currentParentOfSrc];
+      length++;
+    }
+    while (currentLevelOfDest > currentLevelOfSrc) {
+//      System.out.println("DestParent: " + currentParentOfDest);
+      currentLevelOfDest--;
+      destination = currentParentOfDest;
+      currentParentOfDest = origBfsData.bfsParent[currentParentOfDest];
+      length++;
+    }
+    if (currentV == destination) {
+//      System.out.println("curV == dest: " + currentV);
+      return length;
+    } else if (shouldBeSameBranch) {
+      return Integer.MAX_VALUE;
+    }
+
+    while(currentParentOfSrc != currentParentOfDest) {
+      length += 2;
+//      System.out.println("SrcParent: " + currentParentOfSrc + ", DestParent: " + currentParentOfDest);
+      currentParentOfSrc = sourceBfsData.bfsParent[currentParentOfSrc];
+      currentParentOfDest = origBfsData.bfsParent[currentParentOfDest];
+    }
+
+//    System.out.println("SrcParent: " + currentParentOfSrc + ", DestParent: " + currentParentOfDest);
     return length + 2;
   }
 
@@ -284,6 +407,60 @@ public class Utils {
       }
     }
 //    System.out.println("BiDirectional numEdgesTraversed: " + numEdgesTraversed);
+    Utils.numEdgesTraversed = numEdgesTraversed;
+    return -1;
+  }
+
+  public static int getSSSDSPBiDirBFSDirGraph(int[][] origGraph, int[][] revGraph, int src, int dest) {
+    int[] fwBfsLevels = new int[origGraph.length];
+    int[] bwBfsLevels = new int[revGraph.length];
+    for (int i = 0; i < origGraph.length; ++i) {
+      fwBfsLevels[i] = -1;
+      bwBfsLevels[i] = -1;
+    }
+    ArrayBlockingQueue<Integer> fwBfsQueue = new ArrayBlockingQueue<Integer>(origGraph.length);
+    fwBfsQueue.add(src);
+    fwBfsLevels[src] = 0;
+    ArrayBlockingQueue<Integer> bwBfsQueue = new ArrayBlockingQueue<Integer>(revGraph.length);
+    bwBfsQueue.add(dest);
+    bwBfsLevels[dest] = 0;
+    int nextVertex, currentDist;
+    ArrayBlockingQueue<Integer> bfsQueue;
+    int[] traversedBfsLevels, otherBfsLevels;
+    int numEdgesTraversed = 0;
+    int nextBFSStepDistance;
+    int[][] graph;
+    while(!fwBfsQueue.isEmpty() && !bwBfsQueue.isEmpty()) {
+      if (fwBfsQueue.size() <= bwBfsQueue.size()) {
+        bfsQueue = fwBfsQueue;
+        traversedBfsLevels = fwBfsLevels;
+        otherBfsLevels = bwBfsLevels;
+        graph = origGraph;
+      } else {
+        bfsQueue = bwBfsQueue;
+        traversedBfsLevels = bwBfsLevels;
+        otherBfsLevels = fwBfsLevels;
+        graph = revGraph;
+      }
+      nextBFSStepDistance = traversedBfsLevels[bfsQueue.peek()];
+      while (!bfsQueue.isEmpty() && traversedBfsLevels[bfsQueue.peek()] == nextBFSStepDistance) {
+        nextVertex = bfsQueue.remove();
+        currentDist = traversedBfsLevels[nextVertex];
+        for (int nbr : graph[nextVertex]) {
+          numEdgesTraversed++;
+          if (otherBfsLevels[nbr] >= 0) {
+            System.out.println("BiDirectional numEdgesTraversed: " + numEdgesTraversed);
+            Utils.numEdgesTraversed = numEdgesTraversed;
+            return otherBfsLevels[nbr] + currentDist + 1;
+          } else if (-1 == traversedBfsLevels[nbr]) {
+            bfsQueue.add(nbr);
+            traversedBfsLevels[nbr] = currentDist + 1;
+          }
+        }
+      }
+    }
+
+    System.out.println("BiDirectional numEdgesTraversed: " + numEdgesTraversed);
     Utils.numEdgesTraversed = numEdgesTraversed;
     return -1;
   }
