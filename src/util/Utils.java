@@ -480,18 +480,6 @@ public class Utils {
     }
 
     for (int i = 0; i < bfsTrees.length; ++i) {
-
-      System.out.print("level: ");
-      for (int j = 0; j < bfsTrees[i].bfsLevel.length; ++j) {
-        System.out.print(bfsTrees[i].bfsLevel[j] + " ");
-      }
-      System.out.println();
-      System.out.print("parent: ");
-      for (int j = 0; j < bfsTrees[i].bfsParent.length; ++j) {
-        System.out.print(bfsTrees[i].bfsParent[j] + " ");
-      }
-      System.out.println();
-
       int[] parents = bfsTrees[i].bfsParent;
       for (int v = 0; v < parents.length; ++v) {
         if (parents[v] == -1) {
