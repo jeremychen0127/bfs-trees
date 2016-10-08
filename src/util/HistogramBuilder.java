@@ -194,13 +194,14 @@ public class HistogramBuilder {
         System.out.println("None of queries has a path");
       } else {
         System.out.println("Percentage of BFS paths are shortest paths: " +
-          ((double) granularHistogram.get(0) / (numTrials - numQueriesAcrossComponents[i])));
+          (100.0 * granularHistogram.get(0) / (numTrials - numQueriesAcrossComponents[i])));
         System.out.println("# of shortest paths in BFS through root: " + numPathsThroughBFSRoot[i] +
-          ", Percentage: " + ((double) numPathsThroughBFSRoot[i] / granularHistogram.get(0)));
+          ", Percentage: " + (100.0 * numPathsThroughBFSRoot[i] / granularHistogram.get(0)));
       }
 
       for (int j = 0; j < granularHistogram.size(); ++j) {
-        System.out.println("Difference: " + j + ", # of Queries: " + granularHistogram.get(j));
+        System.out.println("Difference: " + j + ", Percentage: " +
+          (100.0 * granularHistogram.get(j) / (numTrials - numQueriesAcrossComponents[i])));
       }
     }
   }
