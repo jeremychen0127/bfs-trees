@@ -11,8 +11,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Random;
+import java.util.TreeMap;
 import java.util.concurrent.ArrayBlockingQueue;
 
 import util.graph.AbstractGraph;
@@ -463,6 +465,45 @@ public class Utils {
     System.out.println("BiDirectional numEdgesTraversed: " + numEdgesTraversed);
     Utils.numEdgesTraversed = numEdgesTraversed;
     return -1;
+  }
+
+  public static ArrayList getParentHistogram(int[][] graph, SimpleBFSData[] bfsTrees) {
+    ArrayList<TreeMap<Integer, Integer>> parentHistogram = new ArrayList<>();
+
+    for (int v = 0; v < graph.length; v++) {
+      int[] neighbors = graph[v];
+      TreeMap<Integer, Integer> parentHistogramForOneVertex = new TreeMap<>();
+      for (int neighbor: neighbors) {
+        parentHistogramForOneVertex.put(neighbor, 0);
+      }
+      parentHistogram.add(parentHistogramForOneVertex);
+    }
+
+    for (int i = 0; i < bfsTrees.length; ++i) {
+
+      System.out.print("level: ");
+      for (int j = 0; j < bfsTrees[i].bfsLevel.length; ++j) {
+        System.out.print(bfsTrees[i].bfsLevel[j] + " ");
+      }
+      System.out.println();
+      System.out.print("parent: ");
+      for (int j = 0; j < bfsTrees[i].bfsParent.length; ++j) {
+        System.out.print(bfsTrees[i].bfsParent[j] + " ");
+      }
+      System.out.println();
+
+      int[] parents = bfsTrees[i].bfsParent;
+      for (int v = 0; v < parents.length; ++v) {
+        if (parents[v] == -1) {
+          continue;
+        }
+
+        int count = parentHistogram.get(v).get(parents[v]);
+        parentHistogram.get(v).put(parents[v], count + 1);
+      }
+    }
+
+    return parentHistogram;
   }
   
   public static void dumpGraph(int[][] graph) {
