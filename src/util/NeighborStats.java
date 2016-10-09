@@ -71,15 +71,35 @@ public class NeighborStats {
     System.out.println("AVG TIME TAKEN TO CONSTRUCT 1 BFS TREE: "
       + ((endTime - startTime)/(1000*totalNumBFSTrees)));
 
+    // parentHistogram.get(vertexId).get(neighborId) is the count
     ArrayList<TreeMap<Integer, Integer>> parentHistogram = Utils.getParentHistogram(graph, bfsTrees);
 
+    // print # of BFS trees that each neighbor to be the vertex's parent
     for (int v = 0; v < parentHistogram.size(); ++v) {
-      System.out.println("===== Vertex " + v + "=====");
+//      System.out.println("===== Vertex " + v + "=====");
       for(Map.Entry<Integer,Integer> entry : parentHistogram.get(v).entrySet()) {
         Integer neighbor = entry.getKey();
         Integer numParents = entry.getValue();
 
-        System.out.println("Neighbor: " + neighbor + ", # of trees to be the parent: " + numParents);
+//        System.out.println("Neighbor: " + neighbor + ", # of trees to be the parent: " + numParents);
+      }
+    }
+
+    for (int v = 0; v < graph.length; ++v) {
+      int[] neighbors = graph[v];
+      Pair[] degreeSortedNeighbors = new Pair[neighbors.length];
+      for (int n = 0; n < neighbors.length; n++) {
+        degreeSortedNeighbors[n] = new Pair(neighbors[n], graph[neighbors[n]].length);
+      }
+      Arrays.sort(degreeSortedNeighbors, degreeComparator);
+
+      System.out.println("===== Vertex " + v + "=====");
+      for (int n = 0; n < degreeSortedNeighbors.length; n++) {
+        int neighborId = degreeSortedNeighbors[degreeSortedNeighbors.length - (n + 1)].id;
+        System.out.print("No." + (n+1) + " ");
+        System.out.print("Neighbor: " + neighborId + " ");
+        System.out.print("# of trees as a parent: " + parentHistogram.get(v).get(neighborId));
+        System.out.println();
       }
     }
   }
