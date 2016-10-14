@@ -203,8 +203,8 @@ public class NeighborStats {
         numLimitedBFSkNotFindPath++;
       }
 
-      System.out.println("#Edges Traversed (BFS, BFS-k): (" + numEdgesShortestPath +
-        ", " + numEdgesLimitedBFSk + ")");
+      System.out.println("(" + src + "->" + dst + ") #Edges Traversed (BFS, BFS-k): ("
+        + numEdgesShortestPath + ", " + numEdgesLimitedBFSk + ")");
     }
 
     System.out.println("#queries BFS-k unable to find a path: " + numLimitedBFSkNotFindPath);
