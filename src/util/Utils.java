@@ -12,7 +12,9 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -413,6 +415,99 @@ public class Utils {
     return -1;
   }
 
+  public static int[] getTopKNeighbors(TreeMap<Integer, Integer> neighbors, int k) {
+    Pair[] topKNeighbors = new Pair[k];
+    for (int i = 0; i < topKNeighbors.length; ++i) {
+      topKNeighbors[i] = new Pair(-1, -1);
+    }
+    Pair.PairComparator degreeComparator = new Pair.PairComparator();
+
+    for(Map.Entry<Integer,Integer> entry : neighbors.entrySet()) {
+      Integer neighborId = entry.getKey();
+      Integer numAsParent = entry.getValue();
+
+      if (topKNeighbors[0].id == -1) {
+        System.arraycopy(topKNeighbors, 1, topKNeighbors, 0, topKNeighbors.length - 1);
+        topKNeighbors[topKNeighbors.length - 1] = new Pair(neighborId, numAsParent);
+        Arrays.sort(topKNeighbors, degreeComparator);
+      } else {
+        if (numAsParent >= topKNeighbors[topKNeighbors.length - 1].degree) {
+          System.arraycopy(topKNeighbors, 1, topKNeighbors, 0, topKNeighbors.length - 1);
+          topKNeighbors[topKNeighbors.length - 1] = new Pair(neighborId, numAsParent);
+        }
+      }
+    }
+
+    int[] topKNeighborIds = new int[k];
+    for (int i = 0; i < topKNeighbors.length; ++i) {
+      topKNeighborIds[i] = topKNeighbors[i].id;
+    }
+
+    return topKNeighborIds;
+  }
+
+  public static boolean contains(int[] array, int value) {
+    for (int num : array) {
+      if (num == value) return true;
+    }
+    return false;
+  }
+
+  public static int getLimitedKBiDirBFS(int[][] graph, ArrayList<TreeMap<Integer, Integer>> parentHistogram, int src, int dest, int k) {
+    int[] fwBfsLevels = new int[graph.length];
+    int[] bwBfsLevels = new int[graph.length];
+    for (int i = 0; i < graph.length; ++i) {
+      fwBfsLevels[i] = -1;
+      bwBfsLevels[i] = -1;
+    }
+    ArrayBlockingQueue<Integer> fwBfsQueue = new ArrayBlockingQueue<Integer>(graph.length);
+    fwBfsQueue.add(src);
+    fwBfsLevels[src] = 0;
+    ArrayBlockingQueue<Integer> bwBfsQueue = new ArrayBlockingQueue<Integer>(graph.length);
+    bwBfsQueue.add(dest);
+    bwBfsLevels[dest] = 0;
+    int nextVertex, currentDist;
+    ArrayBlockingQueue<Integer> bfsQueue;
+    int[] traversedBfsLevels, otherBfsLevels;
+    int numEdgesTraversed = 0;
+    int nextBFSStepDistance;
+    int[] topKNeighbors;
+    int counter = 0;
+    while(!fwBfsQueue.isEmpty() && !bwBfsQueue.isEmpty() && counter < 10) {
+      if (fwBfsQueue.size() <= bwBfsQueue.size()) {
+        bfsQueue = fwBfsQueue;
+        traversedBfsLevels = fwBfsLevels;
+        otherBfsLevels = bwBfsLevels;
+      } else {
+        bfsQueue = bwBfsQueue;
+        traversedBfsLevels = bwBfsLevels;
+        otherBfsLevels = fwBfsLevels;
+      }
+      nextBFSStepDistance = traversedBfsLevels[bfsQueue.peek()];
+      while (!bfsQueue.isEmpty() && traversedBfsLevels[bfsQueue.peek()] == nextBFSStepDistance) {
+        nextVertex = bfsQueue.remove();
+        currentDist = traversedBfsLevels[nextVertex];
+        topKNeighbors = getTopKNeighbors(parentHistogram.get(nextVertex), 3);
+        for (int nbr : graph[nextVertex]) {
+          if (contains(topKNeighbors, nbr)) {
+            numEdgesTraversed++;
+            if (otherBfsLevels[nbr] >= 0) {
+              Utils.numEdgesTraversed = numEdgesTraversed;
+              return otherBfsLevels[nbr] + currentDist + 1;
+            } else if (-1 == traversedBfsLevels[nbr]) {
+              bfsQueue.add(nbr);
+              traversedBfsLevels[nbr] = currentDist + 1;
+            }
+          }
+        }
+      }
+      counter++;
+    }
+
+    Utils.numEdgesTraversed = numEdgesTraversed;
+    return -1;
+  }
+
   public static int getSSSDSPBiDirBFSDirGraph(int[][] origGraph, int[][] revGraph, int src, int dest) {
     int[] fwBfsLevels = new int[origGraph.length];
     int[] bwBfsLevels = new int[revGraph.length];
@@ -467,7 +562,7 @@ public class Utils {
     return -1;
   }
 
-  public static ArrayList getParentHistogram(int[][] graph, SimpleBFSData[] bfsTrees) {
+  public static ArrayList<TreeMap<Integer, Integer>> getParentHistogram(int[][] graph, SimpleBFSData[] bfsTrees) {
     ArrayList<TreeMap<Integer, Integer>> parentHistogram = new ArrayList<>();
 
     for (int v = 0; v < graph.length; v++) {
