@@ -14,6 +14,7 @@ public class NeighborStats {
     String graphFile = args[0];
     int numHighDegreeBFSTrees = Integer.parseInt(args[1]);
     int numRandomBFSTrees = Integer.parseInt(args[2]);
+    int numBFSTrees = numHighDegreeBFSTrees + numRandomBFSTrees;
     int numTrials = Integer.parseInt(args[3]);
     boolean isDirectedGraph = Boolean.parseBoolean(args[4]);
     System.out.println("graphFile:" + graphFile);
@@ -85,6 +86,12 @@ public class NeighborStats {
       }
     }
 
+    int numHighestDegreeIsParent50Percent = 0;
+    int numHighestDegreeIsParent90Percent = 0;
+    int num2HighestDegreeIsParent50Percent = 0;
+    int num2HighestDegreeIsParent90Percent = 0;
+    int num3HighestDegreeIsParent50Percent = 0;
+    int num3HighestDegreeIsParent90Percent = 0;
     for (int v = 0; v < graph.length; ++v) {
       int[] neighbors = graph[v];
       Pair[] degreeSortedNeighbors = new Pair[neighbors.length];
@@ -93,6 +100,44 @@ public class NeighborStats {
       }
       Arrays.sort(degreeSortedNeighbors, degreeComparator);
 
+      int highestDegreeNeighborId = -1;
+      int numHighestIsParent = -1;
+      if (degreeSortedNeighbors.length >= 1) {
+        highestDegreeNeighborId = degreeSortedNeighbors[degreeSortedNeighbors.length - 1].id;
+        numHighestIsParent = parentHistogram.get(v).get(highestDegreeNeighborId);
+        if (numHighestIsParent >= numBFSTrees / 2) {
+          numHighestDegreeIsParent50Percent++;
+        }
+        if (numHighestIsParent >= numBFSTrees * 0.9) {
+          numHighestDegreeIsParent90Percent++;
+        }
+      }
+
+      int secHighestDegreeNeighborId = -1;
+      int num2HighestAreParent = -1;
+      if (degreeSortedNeighbors.length >= 2) {
+        secHighestDegreeNeighborId = degreeSortedNeighbors[degreeSortedNeighbors.length - 2].id;
+        num2HighestAreParent = numHighestIsParent + parentHistogram.get(v).get(secHighestDegreeNeighborId);
+        if (num2HighestAreParent >= numBFSTrees / 2) {
+          num2HighestDegreeIsParent50Percent++;
+        }
+        if (num2HighestAreParent >= numBFSTrees * 0.9) {
+          num2HighestDegreeIsParent90Percent++;
+        }
+      }
+
+      if (degreeSortedNeighbors.length >= 3) {
+        int thirdHighestDegreeNeighborId = degreeSortedNeighbors[degreeSortedNeighbors.length - 3].id;
+        int num3HighestAreParent = num2HighestAreParent + parentHistogram.get(v).get(thirdHighestDegreeNeighborId);
+        if (num3HighestAreParent >= numBFSTrees / 2) {
+          num3HighestDegreeIsParent50Percent++;
+        }
+        if (num3HighestAreParent >= numBFSTrees * 0.9) {
+          num3HighestDegreeIsParent90Percent++;
+        }
+      }
+
+      /*
       System.out.println("===== Vertex " + v + "=====");
       for (int n = 0; n < degreeSortedNeighbors.length; n++) {
         int neighborId = degreeSortedNeighbors[degreeSortedNeighbors.length - (n + 1)].id;
@@ -101,6 +146,73 @@ public class NeighborStats {
         System.out.print("# of trees as a parent: " + parentHistogram.get(v).get(neighborId));
         System.out.println();
       }
+      */
+    }
+    System.out.println("% of vertices having highest-degree neighbor as parent over 50% trees: " +
+      100.0 * numHighestDegreeIsParent50Percent / graph.length);
+    System.out.println("% of vertices having highest-degree neighbor as parent over 90% trees: " +
+      100.0 * numHighestDegreeIsParent90Percent / graph.length);
+    System.out.println("% of vertices having top 2 highest-degree neighbors as parent over 50% trees: " +
+      100.0 * num2HighestDegreeIsParent50Percent / graph.length);
+    System.out.println("% of vertices having top 2 highest-degree neighbors as parent over 90% trees: " +
+      100.0 * num2HighestDegreeIsParent90Percent / graph.length);
+    System.out.println("% of vertices having top 3 highest-degree neighbors as parent over 50% trees: " +
+      100.0 * num3HighestDegreeIsParent50Percent / graph.length);
+    System.out.println("% of vertices having top 3 highest-degree neighbors as parent over 90% trees: " +
+      100.0 * num3HighestDegreeIsParent90Percent / graph.length);
+
+    int src, dst;
+    long numEdgesShortestPath, numEdgesLimitedBFSk;
+    int shortestPathLength, limitedBFSkPathLength;
+    int numAbleToFindPath = 0;
+    int numLimitedBFSkNotFindPath = 0;
+    long numEdgesShortestPathSum = 0;
+    long numEdgesLimitedBFSkSum = 0;
+    int[] differences = new int[10];
+    for (int j = 0; j < differences.length; ++j) {
+      differences[j] = 0;
+    }
+
+    for (int i = 0; i < numTrials; ++i) {
+      if (i > 0 && (i % 1000) == 0) {
+        System.out.println("Starting " + i + "th trial.");
+      }
+
+      // Generates random queries from s to t with s != t
+      src = random.nextInt(graph.length);
+      dst = random.nextInt(graph.length);
+      while (src == dst) {
+        dst = random.nextInt(graph.length);
+      }
+
+      shortestPathLength = Utils.getSSSDSPBiDirBFS(graph, src, dst);
+      numEdgesShortestPath = Utils.numEdgesTraversed;
+      limitedBFSkPathLength = Utils.getLimitedKBiDirBFS(graph, parentHistogram, src, dst, 3);
+      numEdgesLimitedBFSk = Utils.numEdgesTraversed;
+      if (shortestPathLength > 0 && limitedBFSkPathLength > 0) {
+        numEdgesShortestPathSum += numEdgesShortestPath;
+        numEdgesLimitedBFSkSum += numEdgesLimitedBFSk;
+        numAbleToFindPath++;
+
+        if (limitedBFSkPathLength - shortestPathLength >= 0) {
+          differences[limitedBFSkPathLength - shortestPathLength]++;
+        } else {
+          System.out.println("ERROR: limited BFS-k found a shorter path");
+        }
+      } else if (shortestPathLength > 0) {
+        numLimitedBFSkNotFindPath++;
+      }
+
+      System.out.println("#Edges Traversed (BFS, BFS-k): (" + numEdgesShortestPath +
+        ", " + numEdgesLimitedBFSk + ")");
+    }
+
+    System.out.println("#queries BFS-k unable to find a path: " + numLimitedBFSkNotFindPath);
+    System.out.println("Avg #Edges Traversed (BFS, BFS-k): (" + (1.0 * numEdgesShortestPathSum / numAbleToFindPath) +
+      ", " + (1.0 * numEdgesLimitedBFSkSum / numAbleToFindPath) + ")");
+
+    for (int k = 0; k < differences.length; ++k) {
+      System.out.println("Difference " + k + ": " + differences[k]);
     }
   }
 }
