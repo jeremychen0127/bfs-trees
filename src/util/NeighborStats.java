@@ -16,11 +16,13 @@ public class NeighborStats {
     int numRandomBFSTrees = Integer.parseInt(args[2]);
     int numBFSTrees = numHighDegreeBFSTrees + numRandomBFSTrees;
     int numTrials = Integer.parseInt(args[3]);
-    boolean isDirectedGraph = Boolean.parseBoolean(args[4]);
+    int kForLimitedBFS = Integer.parseInt(args[4]);
+    boolean isDirectedGraph = Boolean.parseBoolean(args[5]);
     System.out.println("graphFile:" + graphFile);
     System.out.println("numHighDegreeBFSTrees:" + numHighDegreeBFSTrees);
     System.out.println("numRandomBFSTrees:" + numRandomBFSTrees);
     System.out.println("numTrials: " + numTrials);
+    System.out.println("kForLimitedBFS: " + kForLimitedBFS);
     System.out.println("directed: " + isDirectedGraph);
     long startTime = System.currentTimeMillis();
     int[][] graph = Utils.getGraph(graphFile);
@@ -93,6 +95,10 @@ public class NeighborStats {
     int num3HighestDegreeIsParent50Percent = 0;
     int num3HighestDegreeIsParent90Percent = 0;
     for (int v = 0; v < graph.length; ++v) {
+//      if (v > 0 && (v % 10000) == 0) {
+//        System.out.println("Processing " + v + "th vertex for parent histogram.");
+//      }
+
       int[] neighbors = graph[v];
       Pair[] degreeSortedNeighbors = new Pair[neighbors.length];
       for (int n = 0; n < neighbors.length; n++) {
@@ -187,7 +193,7 @@ public class NeighborStats {
 
       shortestPathLength = Utils.getSSSDSPBiDirBFS(graph, src, dst);
       numEdgesShortestPath = Utils.numEdgesTraversed;
-      limitedBFSkPathLength = Utils.getLimitedKBiDirBFS(graph, parentHistogram, src, dst, 3);
+      limitedBFSkPathLength = Utils.getLimitedKBiDirBFS(graph, parentHistogram, src, dst, kForLimitedBFS);
       numEdgesLimitedBFSk = Utils.numEdgesTraversed;
       if (shortestPathLength > 0 && limitedBFSkPathLength > 0) {
         numEdgesShortestPathSum += numEdgesShortestPath;
