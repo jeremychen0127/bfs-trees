@@ -487,7 +487,7 @@ public class Utils {
       while (!bfsQueue.isEmpty() && traversedBfsLevels[bfsQueue.peek()] == nextBFSStepDistance) {
         nextVertex = bfsQueue.remove();
         currentDist = traversedBfsLevels[nextVertex];
-        topKNeighbors = getTopKNeighbors(parentHistogram.get(nextVertex), 3);
+        topKNeighbors = getTopKNeighbors(parentHistogram.get(nextVertex), k);
         for (int nbr : graph[nextVertex]) {
           if (contains(topKNeighbors, nbr)) {
             numEdgesTraversed++;
@@ -566,6 +566,9 @@ public class Utils {
     ArrayList<TreeMap<Integer, Integer>> parentHistogram = new ArrayList<>();
 
     for (int v = 0; v < graph.length; v++) {
+      if (v > 0 && (v % 1000000) == 0) {
+        System.out.println("Processing " + v + "th vertex for initializing parent histogram.");
+      }
       int[] neighbors = graph[v];
       TreeMap<Integer, Integer> parentHistogramForOneVertex = new TreeMap<>();
       for (int neighbor: neighbors) {
@@ -577,6 +580,9 @@ public class Utils {
     for (int i = 0; i < bfsTrees.length; ++i) {
       int[] parents = bfsTrees[i].bfsParent;
       for (int v = 0; v < parents.length; ++v) {
+        if (v > 0 && (v % 1000000) == 0) {
+          System.out.println("Processing " + v + "th vertex for " + i + "th tree as generating parent histogram");
+        }
         if (parents[v] == -1) {
           continue;
         }
