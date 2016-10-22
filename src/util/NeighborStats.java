@@ -17,12 +17,14 @@ public class NeighborStats {
     int numBFSTrees = numHighDegreeBFSTrees + numRandomBFSTrees;
     int numTrials = Integer.parseInt(args[3]);
     int kForLimitedBFS = Integer.parseInt(args[4]);
-    boolean isDirectedGraph = Boolean.parseBoolean(args[5]);
+    boolean randomK = Boolean.parseBoolean(args[5]);
+    boolean isDirectedGraph = Boolean.parseBoolean(args[6]);
     System.out.println("graphFile:" + graphFile);
     System.out.println("numHighDegreeBFSTrees:" + numHighDegreeBFSTrees);
     System.out.println("numRandomBFSTrees:" + numRandomBFSTrees);
     System.out.println("numTrials: " + numTrials);
     System.out.println("kForLimitedBFS: " + kForLimitedBFS);
+    System.out.println("randomK: " + randomK);
     System.out.println("directed: " + isDirectedGraph);
     long startTime = System.currentTimeMillis();
     int[][] graph = Utils.getGraph(graphFile);
@@ -193,7 +195,7 @@ public class NeighborStats {
 
       shortestPathLength = Utils.getSSSDSPBiDirBFS(graph, src, dst);
       numEdgesShortestPath = Utils.numEdgesTraversed;
-      limitedBFSkPathLength = Utils.getLimitedKBiDirBFS(graph, parentHistogram, src, dst, kForLimitedBFS);
+      limitedBFSkPathLength = Utils.getLimitedBFSK(graph, parentHistogram, src, dst, kForLimitedBFS, randomK);
       numEdgesLimitedBFSk = Utils.numEdgesTraversed;
       if (shortestPathLength > 0 && limitedBFSkPathLength > 0) {
         numEdgesShortestPathSum += numEdgesShortestPath;

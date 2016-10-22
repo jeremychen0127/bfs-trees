@@ -10,10 +10,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
@@ -415,6 +413,25 @@ public class Utils {
     return -1;
   }
 
+  public static int[] getRandomKNeighbors(TreeMap<Integer, Integer> neighbors, int k) {
+    int[] neighborIds = new int[neighbors.size()];
+    int j = 0;
+    for(Map.Entry<Integer,Integer> entry : neighbors.entrySet()) {
+      neighborIds[j] = entry.getKey();
+      j++;
+    }
+
+    int[] randomKNeighborIds = new int[k];
+    int randomIndex = -1;
+    Random random = new Random();
+    for (int i = 0; i < k; ++i) {
+      randomIndex = random.nextInt(neighborIds.length);
+      randomKNeighborIds[i] = neighborIds[randomIndex];
+    }
+
+    return randomKNeighborIds;
+  }
+
   public static int[] getTopKNeighbors(TreeMap<Integer, Integer> neighbors, int k) {
     Pair[] topKNeighbors = new Pair[k];
     for (int i = 0; i < topKNeighbors.length; ++i) {
@@ -422,9 +439,11 @@ public class Utils {
     }
     Pair.PairComparator degreeComparator = new Pair.PairComparator();
 
+    Integer neighborId = -1;
+    Integer numAsParent = -1;
     for(Map.Entry<Integer,Integer> entry : neighbors.entrySet()) {
-      Integer neighborId = entry.getKey();
-      Integer numAsParent = entry.getValue();
+      neighborId = entry.getKey();
+      numAsParent = entry.getValue();
 
       if (topKNeighbors[0].id == -1) {
         System.arraycopy(topKNeighbors, 1, topKNeighbors, 0, topKNeighbors.length - 1);
@@ -453,7 +472,7 @@ public class Utils {
     return false;
   }
 
-  public static int getLimitedKBiDirBFS(int[][] graph, ArrayList<TreeMap<Integer, Integer>> parentHistogram, int src, int dest, int k) {
+  public static int getLimitedBFSK(int[][] graph, ArrayList<TreeMap<Integer, Integer>> parentHistogram, int src, int dest, int k, boolean randomK) {
     int[] fwBfsLevels = new int[graph.length];
     int[] bwBfsLevels = new int[graph.length];
     for (int i = 0; i < graph.length; ++i) {
@@ -471,7 +490,7 @@ public class Utils {
     int[] traversedBfsLevels, otherBfsLevels;
     int numEdgesTraversed = 0;
     int nextBFSStepDistance;
-    int[] topKNeighbors;
+    int[] kNeighbors;
     int counter = 0;
     while(!fwBfsQueue.isEmpty() && !bwBfsQueue.isEmpty() && counter < 10) {
       if (fwBfsQueue.size() <= bwBfsQueue.size()) {
@@ -487,9 +506,14 @@ public class Utils {
       while (!bfsQueue.isEmpty() && traversedBfsLevels[bfsQueue.peek()] == nextBFSStepDistance) {
         nextVertex = bfsQueue.remove();
         currentDist = traversedBfsLevels[nextVertex];
-        topKNeighbors = getTopKNeighbors(parentHistogram.get(nextVertex), k);
+
+        if (randomK) {
+          kNeighbors = getRandomKNeighbors(parentHistogram.get(nextVertex), k);
+        } else {
+          kNeighbors = getTopKNeighbors(parentHistogram.get(nextVertex), k);
+        }
         for (int nbr : graph[nextVertex]) {
-          if (contains(topKNeighbors, nbr)) {
+          if (contains(kNeighbors, nbr)) {
             numEdgesTraversed++;
             if (otherBfsLevels[nbr] >= 0) {
               Utils.numEdgesTraversed = numEdgesTraversed;
