@@ -421,6 +421,10 @@ public class Utils {
       j++;
     }
 
+    if (neighborIds.length <= k) {
+      return neighborIds;
+    }
+
     int[] randomKNeighborIds = new int[k];
     int randomIndex = -1;
     Random random = new Random();
