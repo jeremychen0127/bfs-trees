@@ -176,6 +176,8 @@ public class NeighborStats {
     int numLimitedBFSkNotFindPath = 0;
     long numEdgesShortestPathSum = 0;
     long numEdgesLimitedBFSkSum = 0;
+    long totalTimeForBiDirSSSDSP = 0;
+    long totalTimeForLimitedBFSk = 0;
     int[] differences = new int[10];
     for (int j = 0; j < differences.length; ++j) {
       differences[j] = 0;
@@ -193,10 +195,18 @@ public class NeighborStats {
         dst = random.nextInt(graph.length);
       }
 
+      startTime = System.nanoTime();
       shortestPathLength = Utils.getSSSDSPBiDirBFS(graph, src, dst);
+      endTime = System.nanoTime();
+      totalTimeForBiDirSSSDSP += (endTime - startTime);
       numEdgesShortestPath = Utils.numEdgesTraversed;
+
+      startTime = System.nanoTime();
       limitedBFSkPathLength = Utils.getLimitedBFSK(graph, parentHistogram, src, dst, kForLimitedBFS, randomK);
+      endTime = System.nanoTime();
+      totalTimeForLimitedBFSk += (endTime - startTime);
       numEdgesLimitedBFSk = Utils.numEdgesTraversed;
+
       if (shortestPathLength > 0 && limitedBFSkPathLength > 0) {
         numEdgesShortestPathSum += numEdgesShortestPath;
         numEdgesLimitedBFSkSum += numEdgesLimitedBFSk;
@@ -216,6 +226,8 @@ public class NeighborStats {
     }
 
     System.out.println("#queries BFS-k unable to find a path: " + numLimitedBFSkNotFindPath);
+    System.out.println("totalTimeForBiDirSSSDSP: " + totalTimeForBiDirSSSDSP +
+      ", totalTimeForLimitedBFSk: " + totalTimeForLimitedBFSk);
     System.out.println("Avg #Edges Traversed (BFS, BFS-k): (" + (1.0 * numEdgesShortestPathSum / numAbleToFindPath) +
       ", " + (1.0 * numEdgesLimitedBFSkSum / numAbleToFindPath) + ")");
 
