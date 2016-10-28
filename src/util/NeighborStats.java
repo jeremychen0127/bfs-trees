@@ -9,7 +9,6 @@ import java.util.Random;
 import java.util.TreeMap;
 
 public class NeighborStats {
-
   public static void main(String[] args) throws NumberFormatException, IOException {
     String graphFile = args[0];
     int numHighDegreeBFSTrees = Integer.parseInt(args[1]);
@@ -17,14 +16,19 @@ public class NeighborStats {
     int numBFSTrees = numHighDegreeBFSTrees + numRandomBFSTrees;
     int numTrials = Integer.parseInt(args[3]);
     int kForLimitedBFS = Integer.parseInt(args[4]);
-    boolean randomK = Boolean.parseBoolean(args[5]);
+    String neighborSelectionMethod = args[5];
+    if (!Utils.contains(Constants.ALLOWED_NEIGHBOR_FILTER, neighborSelectionMethod)) {
+      System.out.println("Allowed options for neighborSelectionMethod argument:");
+      System.out.println(Constants.RANDOM + ", " + Constants.PARENT_FREQ + ", " + Constants.DEGREE);
+      return;
+    }
     boolean isDirectedGraph = Boolean.parseBoolean(args[6]);
     System.out.println("graphFile:" + graphFile);
     System.out.println("numHighDegreeBFSTrees:" + numHighDegreeBFSTrees);
     System.out.println("numRandomBFSTrees:" + numRandomBFSTrees);
     System.out.println("numTrials: " + numTrials);
     System.out.println("kForLimitedBFS: " + kForLimitedBFS);
-    System.out.println("randomK: " + randomK);
+    System.out.println("neighborSelectionMethod: " + neighborSelectionMethod);
     System.out.println("directed: " + isDirectedGraph);
     long startTime = System.currentTimeMillis();
     int[][] graph = Utils.getGraph(graphFile);
@@ -202,7 +206,7 @@ public class NeighborStats {
       numEdgesShortestPath = Utils.numEdgesTraversed;
 
       startTime = System.nanoTime();
-      limitedBFSkPathLength = Utils.getLimitedBFSK(graph, parentHistogram, src, dst, kForLimitedBFS, randomK);
+      limitedBFSkPathLength = Utils.getLimitedBFSK(graph, parentHistogram, src, dst, kForLimitedBFS, neighborSelectionMethod);
       endTime = System.nanoTime();
       totalTimeForLimitedBFSk += (endTime - startTime);
       numEdgesLimitedBFSk = Utils.numEdgesTraversed;
