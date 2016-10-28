@@ -469,6 +469,26 @@ public class Utils {
     return topKNeighborIds;
   }
 
+  public static int[] getKHighestDegreeNeighbors(int[][] graph, int vertex, int k) {
+    int[] neighbors = graph[vertex];
+    if (neighbors.length <= k) {
+      return neighbors;
+    } else {
+      Pair[] idDegrees = new Pair[neighbors.length];
+      Pair.PairComparator degreeComparator = new Pair.PairComparator();
+      for (int i = 0; i < neighbors.length; ++i) {
+        idDegrees[i] = new Pair(neighbors[i], graph[neighbors[i]].length);
+      }
+      Arrays.sort(idDegrees, degreeComparator);
+
+      int[] kHighestDegrees = new int[k];
+      for (int i = 0; i < k; ++i) {
+        kHighestDegrees[i] = idDegrees[neighbors.length - 1 - i].id;
+      }
+      return kHighestDegrees;
+    }
+  }
+
   public static boolean contains(int[] array, int value) {
     for (int num : array) {
       if (num == value) return true;
@@ -476,7 +496,15 @@ public class Utils {
     return false;
   }
 
-  public static int getLimitedBFSK(int[][] graph, ArrayList<TreeMap<Integer, Integer>> parentHistogram, int src, int dest, int k, boolean randomK) {
+  static boolean contains(String[] array, String value) {
+    for (String str : array) {
+      if (str.equals(value)) return true;
+    }
+    return false;
+  }
+
+  public static int getLimitedBFSK(int[][] graph, ArrayList<TreeMap<Integer, Integer>> parentHistogram, int src, int dest, int k,
+                                   String neighborSelectionMethod) {
     int[] fwBfsLevels = new int[graph.length];
     int[] bwBfsLevels = new int[graph.length];
     for (int i = 0; i < graph.length; ++i) {
@@ -511,10 +539,15 @@ public class Utils {
         nextVertex = bfsQueue.remove();
         currentDist = traversedBfsLevels[nextVertex];
 
-        if (randomK) {
+        if (neighborSelectionMethod.equals(Constants.RANDOM)) {
           kNeighbors = getRandomKNeighbors(parentHistogram.get(nextVertex), k);
-        } else {
+        } else if (neighborSelectionMethod.equals(Constants.PARENT_FREQ)) {
           kNeighbors = getTopKNeighbors(parentHistogram.get(nextVertex), k);
+        } else if (neighborSelectionMethod.equals(Constants.DEGREE)) {
+          kNeighbors = getKHighestDegreeNeighbors(graph, nextVertex, k);
+        } else {
+          System.out.println("ERROR: Invalid neighbor selection method");
+          return -1;
         }
         for (int nbr : graph[nextVertex]) {
           if (contains(kNeighbors, nbr)) {
