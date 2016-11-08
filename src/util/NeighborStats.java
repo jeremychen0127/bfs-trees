@@ -173,6 +173,18 @@ public class NeighborStats {
     System.out.println("% of vertices having top 3 highest-degree neighbors as parent over 90% trees: " +
       100.0 * num3HighestDegreeIsParent90Percent / graph.length);
 
+    int[][] kNeighborsGraph;
+    if (neighborSelectionMethod.equals(Constants.RANDOM)) {
+      kNeighborsGraph = Utils.getRandomKNeighborsGraph(graph, kForLimitedBFS);
+    } else if (neighborSelectionMethod.equals(Constants.PARENT_FREQ)) {
+      kNeighborsGraph = Utils.getKParentFreqNeighborsGraph(graph, parentHistogram, kForLimitedBFS);
+    } else if (neighborSelectionMethod.equals(Constants.DEGREE)) {
+      kNeighborsGraph = Utils.getKHighestDegreeNeighborsGraph(graph, kForLimitedBFS);
+    } else {
+      System.out.println("ERROR: Invalid neighbor selection method");
+      return;
+    }
+
     int src, dst;
     long numEdgesShortestPath, numEdgesLimitedBFSk;
     int shortestPathLength, limitedBFSkPathLength;
@@ -206,7 +218,7 @@ public class NeighborStats {
       numEdgesShortestPath = Utils.numEdgesTraversed;
 
       startTime = System.nanoTime();
-      limitedBFSkPathLength = Utils.getLimitedBFSK(graph, parentHistogram, src, dst, kForLimitedBFS, neighborSelectionMethod);
+      limitedBFSkPathLength = Utils.getSSSDSPBiDirBFS(kNeighborsGraph, src, dst);
       endTime = System.nanoTime();
       totalTimeForLimitedBFSk += (endTime - startTime);
       numEdgesLimitedBFSk = Utils.numEdgesTraversed;
@@ -219,7 +231,8 @@ public class NeighborStats {
         if (limitedBFSkPathLength - shortestPathLength >= 0) {
           differences[limitedBFSkPathLength - shortestPathLength]++;
         } else {
-          System.out.println("ERROR: limited BFS-k found a shorter path");
+          System.out.println("ERROR: limited BFS-k found a shorter path (" +
+            limitedBFSkPathLength + ", " + shortestPathLength + ")");
         }
       } else if (shortestPathLength > 0) {
         numLimitedBFSkNotFindPath++;

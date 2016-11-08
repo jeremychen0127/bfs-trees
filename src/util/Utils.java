@@ -413,30 +413,58 @@ public class Utils {
     return -1;
   }
 
-  public static int[] getRandomKNeighbors(TreeMap<Integer, Integer> neighbors, int k) {
-    int[] neighborIds = new int[neighbors.size()];
-    int j = 0;
-    for(Map.Entry<Integer,Integer> entry : neighbors.entrySet()) {
-      neighborIds[j] = entry.getKey();
-      j++;
-    }
-
-    if (neighborIds.length <= k) {
-      return neighborIds;
-    }
-
-    int[] randomKNeighborIds = new int[k];
+  public static int[][] getRandomKNeighborsGraph(int[][] graph, int k) {
+    int[][] randomKNeighborGraph = new int[graph.length][];
+    int[] neighbors;
+    int[] randomKNeighbors;
     int randomIndex = -1;
-    Random random = new Random();
-    for (int i = 0; i < k; ++i) {
-      randomIndex = random.nextInt(neighborIds.length);
-      randomKNeighborIds[i] = neighborIds[randomIndex];
+    for (int i = 0; i < graph.length; ++i) {
+      if (i > 0 && (i % 1000000) == 0) {
+        System.out.println("Processing " + i + "th vertex for creating random k neighbors graph");
+      }
+
+      neighbors = graph[i];
+
+      if (neighbors.length <= k) {
+        randomKNeighborGraph[i] = neighbors;
+      } else {
+        randomKNeighbors = new int[k];
+        Random random = new Random();
+        for (int j = 0; j < k; ++j) {
+          randomIndex = random.nextInt(neighbors.length);
+          randomKNeighbors[j] = neighbors[randomIndex];
+        }
+        randomKNeighborGraph[i] = randomKNeighbors;
+      }
     }
 
-    return randomKNeighborIds;
+    return randomKNeighborGraph;
+  }
+
+  public static int[][] getKParentFreqNeighborsGraph(int[][] graph, ArrayList<TreeMap<Integer, Integer>> parentHistogram, int k) {
+    int[][] kParentFreqNeighborsGraph = new int[parentHistogram.size()][];
+
+    for (int i = 0; i < parentHistogram.size(); ++i) {
+      if (i > 0 && (i % 1000000) == 0) {
+        System.out.println("Processing " + i + "th vertex for creating k highest parent-frequency neighbors graph");
+      }
+
+      if (parentHistogram.get(i).size() <= k) {
+        System.out.println("i:" + i + ", #neighbor:" + graph[i].length);
+        kParentFreqNeighborsGraph[i] = new int[graph[i].length];
+        System.arraycopy(graph[i], 0, kParentFreqNeighborsGraph[i], 0, graph[i].length);
+      } else {
+        kParentFreqNeighborsGraph[i] = getTopKNeighbors(parentHistogram.get(i), k);
+      }
+    }
+
+    return kParentFreqNeighborsGraph;
   }
 
   public static int[] getTopKNeighbors(TreeMap<Integer, Integer> neighbors, int k) {
+    if (neighbors.size() <= k) {
+      System.out.println("ERROR: neighbors.length <= k, should have been handled");
+    }
     Pair[] topKNeighbors = new Pair[k];
     for (int i = 0; i < topKNeighbors.length; ++i) {
       topKNeighbors[i] = new Pair(-1, -1);
@@ -461,32 +489,54 @@ public class Utils {
       }
     }
 
-    int[] topKNeighborIds = new int[k];
+    int[] topKNeighborIds = new int[topKNeighbors.length];
     for (int i = 0; i < topKNeighbors.length; ++i) {
+      if (topKNeighbors[i].id == -1) {
+        System.out.println("ERROR: id is -1");
+      }
       topKNeighborIds[i] = topKNeighbors[i].id;
     }
 
     return topKNeighborIds;
   }
 
-  public static int[] getKHighestDegreeNeighbors(int[][] graph, int vertex, int k) {
-    int[] neighbors = graph[vertex];
-    if (neighbors.length <= k) {
-      return neighbors;
-    } else {
-      Pair[] idDegrees = new Pair[neighbors.length];
-      Pair.PairComparator degreeComparator = new Pair.PairComparator();
-      for (int i = 0; i < neighbors.length; ++i) {
-        idDegrees[i] = new Pair(neighbors[i], graph[neighbors[i]].length);
+  public static int[][] getKHighestDegreeNeighborsGraph(int[][] graph, int k) {
+    int[][] kHighestDegreeNeighborsGraph = new int[graph.length][];
+    int[] neighbors;
+    Pair[] idDegrees;
+    Pair.PairComparator degreeComparator = new Pair.PairComparator();
+    for (int v = 0; v < graph.length; ++v) {
+      if (v > 0 && (v % 1000000) == 0) {
+        System.out.println("Processing " + v + "th vertex for creating k highest degree neighbors graph");
       }
-      Arrays.sort(idDegrees, degreeComparator);
 
-      int[] kHighestDegrees = new int[k];
-      for (int i = 0; i < k; ++i) {
-        kHighestDegrees[i] = idDegrees[neighbors.length - 1 - i].id;
+      neighbors = new int[graph[v].length];
+      System.arraycopy(graph[v], 0, neighbors, 0, graph[v].length);
+      if (neighbors.length <= k) {
+        kHighestDegreeNeighborsGraph[v] = neighbors;
+      } else {
+        idDegrees = new Pair[neighbors.length];
+        for (int i = 0; i < neighbors.length; ++i) {
+          idDegrees[i] = new Pair(neighbors[i], graph[neighbors[i]].length);
+        }
+        Arrays.sort(idDegrees, degreeComparator);
+
+        int[] kHighestDegrees = new int[k];
+        for (int i = 0; i < k; ++i) {
+          kHighestDegrees[i] = idDegrees[neighbors.length - 1 - i].id;
+        }
+        kHighestDegreeNeighborsGraph[v] = kHighestDegrees;
       }
-      return kHighestDegrees;
     }
+
+//    for (int i = 0; i < kHighestDegreeNeighborsGraph.length; ++i) {
+//      System.out.print(i + " ");
+//      for (int j = 0; j < kHighestDegreeNeighborsGraph[i].length; ++j) {
+//        System.out.print(kHighestDegreeNeighborsGraph[i][j] + " ");
+//      }
+//      System.out.println();
+//    }
+    return kHighestDegreeNeighborsGraph;
   }
 
   public static boolean contains(int[] array, int value) {
@@ -501,72 +551,6 @@ public class Utils {
       if (str.equals(value)) return true;
     }
     return false;
-  }
-
-  public static int getLimitedBFSK(int[][] graph, ArrayList<TreeMap<Integer, Integer>> parentHistogram, int src, int dest, int k,
-                                   String neighborSelectionMethod) {
-    int[] fwBfsLevels = new int[graph.length];
-    int[] bwBfsLevels = new int[graph.length];
-    for (int i = 0; i < graph.length; ++i) {
-      fwBfsLevels[i] = -1;
-      bwBfsLevels[i] = -1;
-    }
-    ArrayBlockingQueue<Integer> fwBfsQueue = new ArrayBlockingQueue<Integer>(graph.length);
-    fwBfsQueue.add(src);
-    fwBfsLevels[src] = 0;
-    ArrayBlockingQueue<Integer> bwBfsQueue = new ArrayBlockingQueue<Integer>(graph.length);
-    bwBfsQueue.add(dest);
-    bwBfsLevels[dest] = 0;
-    int nextVertex, currentDist;
-    ArrayBlockingQueue<Integer> bfsQueue;
-    int[] traversedBfsLevels, otherBfsLevels;
-    int numEdgesTraversed = 0;
-    int nextBFSStepDistance;
-    int[] kNeighbors;
-    int counter = 0;
-    while(!fwBfsQueue.isEmpty() && !bwBfsQueue.isEmpty() && counter < 10) {
-      if (fwBfsQueue.size() <= bwBfsQueue.size()) {
-        bfsQueue = fwBfsQueue;
-        traversedBfsLevels = fwBfsLevels;
-        otherBfsLevels = bwBfsLevels;
-      } else {
-        bfsQueue = bwBfsQueue;
-        traversedBfsLevels = bwBfsLevels;
-        otherBfsLevels = fwBfsLevels;
-      }
-      nextBFSStepDistance = traversedBfsLevels[bfsQueue.peek()];
-      while (!bfsQueue.isEmpty() && traversedBfsLevels[bfsQueue.peek()] == nextBFSStepDistance) {
-        nextVertex = bfsQueue.remove();
-        currentDist = traversedBfsLevels[nextVertex];
-
-        if (neighborSelectionMethod.equals(Constants.RANDOM)) {
-          kNeighbors = getRandomKNeighbors(parentHistogram.get(nextVertex), k);
-        } else if (neighborSelectionMethod.equals(Constants.PARENT_FREQ)) {
-          kNeighbors = getTopKNeighbors(parentHistogram.get(nextVertex), k);
-        } else if (neighborSelectionMethod.equals(Constants.DEGREE)) {
-          kNeighbors = getKHighestDegreeNeighbors(graph, nextVertex, k);
-        } else {
-          System.out.println("ERROR: Invalid neighbor selection method");
-          return -1;
-        }
-        for (int nbr : graph[nextVertex]) {
-          if (contains(kNeighbors, nbr)) {
-            numEdgesTraversed++;
-            if (otherBfsLevels[nbr] >= 0) {
-              Utils.numEdgesTraversed = numEdgesTraversed;
-              return otherBfsLevels[nbr] + currentDist + 1;
-            } else if (-1 == traversedBfsLevels[nbr]) {
-              bfsQueue.add(nbr);
-              traversedBfsLevels[nbr] = currentDist + 1;
-            }
-          }
-        }
-      }
-      counter++;
-    }
-
-    Utils.numEdgesTraversed = numEdgesTraversed;
-    return -1;
   }
 
   public static int getSSSDSPBiDirBFSDirGraph(int[][] origGraph, int[][] revGraph, int src, int dest) {
