@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.UnknownFormatConversionException;
+import java.util.concurrent.ArrayBlockingQueue;
 
 import util.Pair.PairComparator;
 
@@ -95,6 +96,11 @@ public class HistogramBuilder {
       histograms.add(i, new ArrayList<Integer>());
     }
 
+    int[] fwBfsLevels = new int[graph.length];
+    int[] bwBfsLevels = new int[graph.length];
+    ArrayBlockingQueue<Integer> fwBfsQueue = null;
+    ArrayBlockingQueue<Integer> bwBfsQueue = null;
+
     for (int i = 0; i < numTrials; ++i) {
       if (i > 0 && (i % 1000) == 0) { 
         System.out.println("Starting " + i + "th trial. numEqual: " + numEqual + " percentage: "
@@ -112,11 +118,16 @@ public class HistogramBuilder {
         System.out.println("src == dst: " + src);
         dst = random.nextInt(graph.length);
       }
+
+      Utils.BiDirBFSInit(fwBfsLevels, bwBfsLevels);
+      fwBfsQueue = new ArrayBlockingQueue<Integer>(graph.length);
+      bwBfsQueue = new ArrayBlockingQueue<Integer>(graph.length);
+
       startTime = System.nanoTime();
       if (isDirectedGraph) {
         actualDist = Utils.getSSSDSPBiDirBFSDirGraph(graph, revGraph, src, dst);
       } else {
-        actualDist = Utils.getSSSDSPBiDirBFS(graph, src, dst);
+        actualDist = Utils.getSSSDSPBiDirBFS(graph, fwBfsLevels, bwBfsLevels, fwBfsQueue, bwBfsQueue, src, dst);
       }
       endTime = System.nanoTime();
       totalTimeForBiDirSSSDSP += (endTime - startTime);

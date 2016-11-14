@@ -357,18 +357,18 @@ public class Utils {
     Utils.numEdgesTraversed = numEdgesTraversed;
     return -1;
   }
-  
-  public static int getSSSDSPBiDirBFS(int[][] graph, int src, int dest) {
-    int[] fwBfsLevels = new int[graph.length];
-    int[] bwBfsLevels = new int[graph.length];
-    for (int i = 0; i < graph.length; ++i) {
+
+  public static void BiDirBFSInit(int[] fwBfsLevels, int[] bwBfsLevels) {
+    for (int i = 0; i < fwBfsLevels.length; ++i) {
       fwBfsLevels[i] = -1;
       bwBfsLevels[i] = -1;
     }
-    ArrayBlockingQueue<Integer> fwBfsQueue = new ArrayBlockingQueue<Integer>(graph.length);
+  }
+  
+  public static int getSSSDSPBiDirBFS(int[][] graph, int[] fwBfsLevels, int[] bwBfsLevels, ArrayBlockingQueue<Integer> fwBfsQueue,
+                                      ArrayBlockingQueue<Integer> bwBfsQueue, int src, int dest) {
     fwBfsQueue.add(src);
     fwBfsLevels[src] = 0;
-    ArrayBlockingQueue<Integer> bwBfsQueue = new ArrayBlockingQueue<Integer>(graph.length);
     bwBfsQueue.add(dest);
     bwBfsLevels[dest] = 0;
     int nextVertex, currentDist;

@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
+import java.util.concurrent.ArrayBlockingQueue;
 
 public class NeighborStats {
   public static void main(String[] args) throws NumberFormatException, IOException {
@@ -198,6 +199,10 @@ public class NeighborStats {
     for (int j = 0; j < differences.length; ++j) {
       differences[j] = 0;
     }
+    int[] fwBfsLevels = new int[graph.length];
+    int[] bwBfsLevels = new int[graph.length];
+    ArrayBlockingQueue<Integer> fwBfsQueue = null;
+    ArrayBlockingQueue<Integer> bwBfsQueue = null;
 
     for (int i = 0; i < numTrials; ++i) {
       if (i > 0 && (i % 1000) == 0) {
@@ -211,14 +216,22 @@ public class NeighborStats {
         dst = random.nextInt(graph.length);
       }
 
+      Utils.BiDirBFSInit(fwBfsLevels, bwBfsLevels);
+      fwBfsQueue = new ArrayBlockingQueue<Integer>(graph.length);
+      bwBfsQueue = new ArrayBlockingQueue<Integer>(graph.length);
+
       startTime = System.nanoTime();
-      shortestPathLength = Utils.getSSSDSPBiDirBFS(graph, src, dst);
+      shortestPathLength = Utils.getSSSDSPBiDirBFS(graph, fwBfsLevels, bwBfsLevels, fwBfsQueue, bwBfsQueue, src, dst);
       endTime = System.nanoTime();
       totalTimeForBiDirSSSDSP += (endTime - startTime);
       numEdgesShortestPath = Utils.numEdgesTraversed;
 
+      Utils.BiDirBFSInit(fwBfsLevels, bwBfsLevels);
+      fwBfsQueue = new ArrayBlockingQueue<Integer>(graph.length);
+      bwBfsQueue = new ArrayBlockingQueue<Integer>(graph.length);
+
       startTime = System.nanoTime();
-      limitedBFSkPathLength = Utils.getSSSDSPBiDirBFS(kNeighborsGraph, src, dst);
+      limitedBFSkPathLength = Utils.getSSSDSPBiDirBFS(kNeighborsGraph, fwBfsLevels, bwBfsLevels, fwBfsQueue, bwBfsQueue, src, dst);
       endTime = System.nanoTime();
       totalTimeForLimitedBFSk += (endTime - startTime);
       numEdgesLimitedBFSk = Utils.numEdgesTraversed;

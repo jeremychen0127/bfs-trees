@@ -31,7 +31,7 @@ public class OneBiDirectionalSSSDSPTester {
       startTime = System.currentTimeMillis();
       int distance;
       for (int i = 0; i < numTrials; ++i) {
-        distance = Utils.getSSSDSPBiDirBFS(graph, srcs[i], dests[i]);
+        distance = 0; // Utils.getSSSDSPBiDirBFS(graph, srcs[i], dests[i]);
         numEdgesTraversedBiDir += Utils.numEdgesTraversed;
         if (distances[i] != distance) {
           System.err.println("ERROR! OneDir distance != BiDir distance src: " + srcs[i] + 
