@@ -115,6 +115,7 @@ public class LimitedBFSk {
     int numAbleToFindPath = 0;
     long numEdgesLimitedBFSkSum = 0;
     long totalTimeForLimitedBFSk = 0;
+
     int[] fwBfsLevels = new int[kNeighborsGraph.length];
     int[] bwBfsLevels = new int[kNeighborsGraph.length];
     ArrayBlockingQueue<Integer> fwBfsQueue = null;

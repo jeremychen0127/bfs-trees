@@ -1,12 +1,8 @@
 package util;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Random;
-import java.util.TreeMap;
 import java.util.concurrent.ArrayBlockingQueue;
 
 public class BiDirBFS {
@@ -27,6 +23,15 @@ public class BiDirBFS {
     System.out.println("TIME TAKEN TO PARSE THE GRAPH: " + ((endTime - startTime)/1000));
 
     Random random = new Random(0);
+    Pair.PairComparator degreeComparator = new Pair.PairComparator();
+    Pair[] idDegrees = new Pair[graph.length];
+    for (int i = 0; i < graph.length; ++i) {
+      idDegrees[i] = new Pair(i, graph[i].length);
+    }
+    startTime = System.currentTimeMillis();
+    Arrays.sort(idDegrees, degreeComparator);
+    endTime = System.currentTimeMillis();
+    System.out.println("TIME TAKEN TO SORT DEGREES: " + ((endTime - startTime)/1000));
 
     int src, dst;
     long numEdgesShortestPath;
