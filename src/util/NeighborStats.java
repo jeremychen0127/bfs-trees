@@ -39,140 +39,122 @@ public class NeighborStats {
     }
     long endTime = System.currentTimeMillis();
     System.out.println("TIME TAKEN TO PARSE THE GRAPH: " + ((endTime - startTime)/1000));
-    Pair.PairComparator degreeComparator = new Pair.PairComparator();
-    Pair[] idDegrees = new Pair[graph.length];
-    for (int i = 0; i < graph.length; ++i) {
-      idDegrees[i] = new Pair(i, graph[i].length);
-    }
-    startTime = System.currentTimeMillis();
-    Arrays.sort(idDegrees, degreeComparator);
-    endTime = System.currentTimeMillis();
-    System.out.println("TIME TAKEN TO SORT DEGREES: " + ((endTime - startTime)/1000));
-
-    SimpleBFSData[] bfsTrees = new SimpleBFSData[numHighDegreeBFSTrees + numRandomBFSTrees];
-    SimpleBFSData[] revBfsTrees = new SimpleBFSData[numHighDegreeBFSTrees + numRandomBFSTrees];
-    startTime = System.currentTimeMillis();
-    for (int i = 0; i < numHighDegreeBFSTrees; ++i) {
-      System.out.println("Source of High Degree BFS Tree vertex: " + idDegrees[idDegrees.length - (i + 1)].id);
-      bfsTrees[i] = BFSImplementations.getBFSTree(graph, idDegrees[idDegrees.length - (i + 1)].id);
-      if (isDirectedGraph) {
-        revBfsTrees[i] = BFSImplementations.getBFSTree(revGraph, idDegrees[idDegrees.length - (i + 1)].id);
-      }
-    }
 
     Random random = new Random(0);
-    for (int i = 0; i < numRandomBFSTrees; ++i) {
-      int nextSrc = random.nextInt(graph.length);
-      if (graph[nextSrc].length == 0) {
-        i--;
-        continue;
-      } else {
-        System.out.println("Source of Random BFS Tree vertex: " + nextSrc);
-        bfsTrees[numHighDegreeBFSTrees + i] = BFSImplementations.getBFSTree(graph, nextSrc);
+
+    SimpleBFSData[] bfsTrees = null;
+    SimpleBFSData[] revBfsTrees = null;
+    ArrayList<TreeMap<Integer, Integer>> parentHistogram = null;
+    if (neighborSelectionMethod.equals(Constants.PARENT_FREQ)) {
+      Pair.PairComparator degreeComparator = new Pair.PairComparator();
+      Pair[] idDegrees = new Pair[graph.length];
+      for (int i = 0; i < graph.length; ++i) {
+        idDegrees[i] = new Pair(i, graph[i].length);
+      }
+      startTime = System.currentTimeMillis();
+      Arrays.sort(idDegrees, degreeComparator);
+      endTime = System.currentTimeMillis();
+      System.out.println("TIME TAKEN TO SORT DEGREES: " + ((endTime - startTime) / 1000));
+
+      bfsTrees = new SimpleBFSData[numHighDegreeBFSTrees + numRandomBFSTrees];
+      revBfsTrees = new SimpleBFSData[numHighDegreeBFSTrees + numRandomBFSTrees];
+      startTime = System.currentTimeMillis();
+      for (int i = 0; i < numHighDegreeBFSTrees; ++i) {
+        System.out.println("Source of High Degree BFS Tree vertex: " + idDegrees[idDegrees.length - (i + 1)].id);
+        bfsTrees[i] = BFSImplementations.getBFSTree(graph, idDegrees[idDegrees.length - (i + 1)].id);
         if (isDirectedGraph) {
-          revBfsTrees[numHighDegreeBFSTrees + i] = BFSImplementations.getBFSTree(revGraph, nextSrc);
+          revBfsTrees[i] = BFSImplementations.getBFSTree(revGraph, idDegrees[idDegrees.length - (i + 1)].id);
         }
       }
+
+      for (int i = 0; i < numRandomBFSTrees; ++i) {
+        int nextSrc = random.nextInt(graph.length);
+        if (graph[nextSrc].length == 0) {
+          i--;
+          continue;
+        } else {
+          System.out.println("Source of Random BFS Tree vertex: " + nextSrc);
+          bfsTrees[numHighDegreeBFSTrees + i] = BFSImplementations.getBFSTree(graph, nextSrc);
+          if (isDirectedGraph) {
+            revBfsTrees[numHighDegreeBFSTrees + i] = BFSImplementations.getBFSTree(revGraph, nextSrc);
+          }
+        }
+      }
+      endTime = System.currentTimeMillis();
+      int totalNumBFSTrees = numHighDegreeBFSTrees + numRandomBFSTrees;
+      System.out.println("TIME TAKEN TO CONSTRUCT" + totalNumBFSTrees
+        + " BFS TREES: " + ((endTime - startTime) / 1000));
+      System.out.println("AVG TIME TAKEN TO CONSTRUCT 1 BFS TREE: "
+        + ((endTime - startTime) / (1000 * totalNumBFSTrees)));
+
+      // parentHistogram.get(vertexId).get(neighborId) is the count
+      parentHistogram = Utils.getParentHistogram(graph, bfsTrees);
+
+      int numHighestDegreeIsParent50Percent = 0;
+      int numHighestDegreeIsParent90Percent = 0;
+      int num2HighestDegreeIsParent50Percent = 0;
+      int num2HighestDegreeIsParent90Percent = 0;
+      int num3HighestDegreeIsParent50Percent = 0;
+      int num3HighestDegreeIsParent90Percent = 0;
+      for (int v = 0; v < graph.length; ++v) {
+
+        int[] neighbors = graph[v];
+        Pair[] degreeSortedNeighbors = new Pair[neighbors.length];
+        for (int n = 0; n < neighbors.length; n++) {
+          degreeSortedNeighbors[n] = new Pair(neighbors[n], graph[neighbors[n]].length);
+        }
+        Arrays.sort(degreeSortedNeighbors, degreeComparator);
+
+        int highestDegreeNeighborId = -1;
+        int numHighestIsParent = -1;
+        if (degreeSortedNeighbors.length >= 1) {
+          highestDegreeNeighborId = degreeSortedNeighbors[degreeSortedNeighbors.length - 1].id;
+          numHighestIsParent = parentHistogram.get(v).get(highestDegreeNeighborId);
+          if (numHighestIsParent >= numBFSTrees / 2) {
+            numHighestDegreeIsParent50Percent++;
+          }
+          if (numHighestIsParent >= numBFSTrees * 0.9) {
+            numHighestDegreeIsParent90Percent++;
+          }
+        }
+
+        int secHighestDegreeNeighborId = -1;
+        int num2HighestAreParent = -1;
+        if (degreeSortedNeighbors.length >= 2) {
+          secHighestDegreeNeighborId = degreeSortedNeighbors[degreeSortedNeighbors.length - 2].id;
+          num2HighestAreParent = numHighestIsParent + parentHistogram.get(v).get(secHighestDegreeNeighborId);
+          if (num2HighestAreParent >= numBFSTrees / 2) {
+            num2HighestDegreeIsParent50Percent++;
+          }
+          if (num2HighestAreParent >= numBFSTrees * 0.9) {
+            num2HighestDegreeIsParent90Percent++;
+          }
+        }
+
+        if (degreeSortedNeighbors.length >= 3) {
+          int thirdHighestDegreeNeighborId = degreeSortedNeighbors[degreeSortedNeighbors.length - 3].id;
+          int num3HighestAreParent = num2HighestAreParent + parentHistogram.get(v).get(thirdHighestDegreeNeighborId);
+          if (num3HighestAreParent >= numBFSTrees / 2) {
+            num3HighestDegreeIsParent50Percent++;
+          }
+          if (num3HighestAreParent >= numBFSTrees * 0.9) {
+            num3HighestDegreeIsParent90Percent++;
+          }
+        }
+      }
+      System.out.println("% of vertices having highest-degree neighbor as parent over 50% trees: " +
+        100.0 * numHighestDegreeIsParent50Percent / graph.length);
+      System.out.println("% of vertices having highest-degree neighbor as parent over 90% trees: " +
+        100.0 * numHighestDegreeIsParent90Percent / graph.length);
+      System.out.println("% of vertices having top 2 highest-degree neighbors as parent over 50% trees: " +
+        100.0 * num2HighestDegreeIsParent50Percent / graph.length);
+      System.out.println("% of vertices having top 2 highest-degree neighbors as parent over 90% trees: " +
+        100.0 * num2HighestDegreeIsParent90Percent / graph.length);
+      System.out.println("% of vertices having top 3 highest-degree neighbors as parent over 50% trees: " +
+        100.0 * num3HighestDegreeIsParent50Percent / graph.length);
+      System.out.println("% of vertices having top 3 highest-degree neighbors as parent over 90% trees: " +
+        100.0 * num3HighestDegreeIsParent90Percent / graph.length);
     }
-    endTime = System.currentTimeMillis();
-    int totalNumBFSTrees = numHighDegreeBFSTrees + numRandomBFSTrees;
-    System.out.println("TIME TAKEN TO CONSTRUCT" + totalNumBFSTrees
-      + " BFS TREES: " + ((endTime - startTime)/1000));
-    System.out.println("AVG TIME TAKEN TO CONSTRUCT 1 BFS TREE: "
-      + ((endTime - startTime)/(1000*totalNumBFSTrees)));
-
-    // parentHistogram.get(vertexId).get(neighborId) is the count
-    ArrayList<TreeMap<Integer, Integer>> parentHistogram = Utils.getParentHistogram(graph, bfsTrees);
-
-    // print # of BFS trees that each neighbor to be the vertex's parent
-    for (int v = 0; v < parentHistogram.size(); ++v) {
-//      System.out.println("===== Vertex " + v + "=====");
-      for(Map.Entry<Integer,Integer> entry : parentHistogram.get(v).entrySet()) {
-        Integer neighbor = entry.getKey();
-        Integer numParents = entry.getValue();
-
-//        System.out.println("Neighbor: " + neighbor + ", # of trees to be the parent: " + numParents);
-      }
-    }
-
-    int numHighestDegreeIsParent50Percent = 0;
-    int numHighestDegreeIsParent90Percent = 0;
-    int num2HighestDegreeIsParent50Percent = 0;
-    int num2HighestDegreeIsParent90Percent = 0;
-    int num3HighestDegreeIsParent50Percent = 0;
-    int num3HighestDegreeIsParent90Percent = 0;
-    for (int v = 0; v < graph.length; ++v) {
-//      if (v > 0 && (v % 10000) == 0) {
-//        System.out.println("Processing " + v + "th vertex for parent histogram.");
-//      }
-
-      int[] neighbors = graph[v];
-      Pair[] degreeSortedNeighbors = new Pair[neighbors.length];
-      for (int n = 0; n < neighbors.length; n++) {
-        degreeSortedNeighbors[n] = new Pair(neighbors[n], graph[neighbors[n]].length);
-      }
-      Arrays.sort(degreeSortedNeighbors, degreeComparator);
-
-      int highestDegreeNeighborId = -1;
-      int numHighestIsParent = -1;
-      if (degreeSortedNeighbors.length >= 1) {
-        highestDegreeNeighborId = degreeSortedNeighbors[degreeSortedNeighbors.length - 1].id;
-        numHighestIsParent = parentHistogram.get(v).get(highestDegreeNeighborId);
-        if (numHighestIsParent >= numBFSTrees / 2) {
-          numHighestDegreeIsParent50Percent++;
-        }
-        if (numHighestIsParent >= numBFSTrees * 0.9) {
-          numHighestDegreeIsParent90Percent++;
-        }
-      }
-
-      int secHighestDegreeNeighborId = -1;
-      int num2HighestAreParent = -1;
-      if (degreeSortedNeighbors.length >= 2) {
-        secHighestDegreeNeighborId = degreeSortedNeighbors[degreeSortedNeighbors.length - 2].id;
-        num2HighestAreParent = numHighestIsParent + parentHistogram.get(v).get(secHighestDegreeNeighborId);
-        if (num2HighestAreParent >= numBFSTrees / 2) {
-          num2HighestDegreeIsParent50Percent++;
-        }
-        if (num2HighestAreParent >= numBFSTrees * 0.9) {
-          num2HighestDegreeIsParent90Percent++;
-        }
-      }
-
-      if (degreeSortedNeighbors.length >= 3) {
-        int thirdHighestDegreeNeighborId = degreeSortedNeighbors[degreeSortedNeighbors.length - 3].id;
-        int num3HighestAreParent = num2HighestAreParent + parentHistogram.get(v).get(thirdHighestDegreeNeighborId);
-        if (num3HighestAreParent >= numBFSTrees / 2) {
-          num3HighestDegreeIsParent50Percent++;
-        }
-        if (num3HighestAreParent >= numBFSTrees * 0.9) {
-          num3HighestDegreeIsParent90Percent++;
-        }
-      }
-
-      /*
-      System.out.println("===== Vertex " + v + "=====");
-      for (int n = 0; n < degreeSortedNeighbors.length; n++) {
-        int neighborId = degreeSortedNeighbors[degreeSortedNeighbors.length - (n + 1)].id;
-        System.out.print("No." + (n+1) + " ");
-        System.out.print("Neighbor: " + neighborId + " ");
-        System.out.print("# of trees as a parent: " + parentHistogram.get(v).get(neighborId));
-        System.out.println();
-      }
-      */
-    }
-    System.out.println("% of vertices having highest-degree neighbor as parent over 50% trees: " +
-      100.0 * numHighestDegreeIsParent50Percent / graph.length);
-    System.out.println("% of vertices having highest-degree neighbor as parent over 90% trees: " +
-      100.0 * numHighestDegreeIsParent90Percent / graph.length);
-    System.out.println("% of vertices having top 2 highest-degree neighbors as parent over 50% trees: " +
-      100.0 * num2HighestDegreeIsParent50Percent / graph.length);
-    System.out.println("% of vertices having top 2 highest-degree neighbors as parent over 90% trees: " +
-      100.0 * num2HighestDegreeIsParent90Percent / graph.length);
-    System.out.println("% of vertices having top 3 highest-degree neighbors as parent over 50% trees: " +
-      100.0 * num3HighestDegreeIsParent50Percent / graph.length);
-    System.out.println("% of vertices having top 3 highest-degree neighbors as parent over 90% trees: " +
-      100.0 * num3HighestDegreeIsParent90Percent / graph.length);
 
     int[][] kNeighborsGraph;
     if (neighborSelectionMethod.equals(Constants.RANDOM)) {
@@ -195,6 +177,8 @@ public class NeighborStats {
     long numEdgesLimitedBFSkSum = 0;
     long totalTimeForBiDirSSSDSP = 0;
     long totalTimeForLimitedBFSk = 0;
+    long timeForBiDirSSSDSP = 0;
+    long timeForLimitedBFSk = 0;
     int[] differences = new int[10];
     for (int j = 0; j < differences.length; ++j) {
       differences[j] = 0;
@@ -204,8 +188,10 @@ public class NeighborStats {
     ArrayBlockingQueue<Integer> fwBfsQueue = null;
     ArrayBlockingQueue<Integer> bwBfsQueue = null;
 
+    System.out.println("src,dst,BFS #Edges Traversed,BFS Processing Time,BFS-k #Edges Traversed,BFS-k Processing Time");
+
     for (int i = 0; i < numTrials; ++i) {
-      if (i > 0 && (i % 1000) == 0) {
+      if (i > 0 && (i % 200) == 0) {
         System.out.println("Starting " + i + "th trial.");
       }
 
@@ -223,7 +209,8 @@ public class NeighborStats {
       startTime = System.nanoTime();
       shortestPathLength = Utils.getSSSDSPBiDirBFS(graph, fwBfsLevels, bwBfsLevels, fwBfsQueue, bwBfsQueue, src, dst);
       endTime = System.nanoTime();
-      totalTimeForBiDirSSSDSP += (endTime - startTime);
+      timeForBiDirSSSDSP = (endTime - startTime);
+      totalTimeForBiDirSSSDSP += timeForBiDirSSSDSP;
       numEdgesShortestPath = Utils.numEdgesTraversed;
 
       Utils.BiDirBFSInit(fwBfsLevels, bwBfsLevels);
@@ -233,13 +220,17 @@ public class NeighborStats {
       startTime = System.nanoTime();
       limitedBFSkPathLength = Utils.getSSSDSPBiDirBFS(kNeighborsGraph, fwBfsLevels, bwBfsLevels, fwBfsQueue, bwBfsQueue, src, dst);
       endTime = System.nanoTime();
-      totalTimeForLimitedBFSk += (endTime - startTime);
+      timeForLimitedBFSk = (endTime - startTime);
+      totalTimeForLimitedBFSk += timeForLimitedBFSk;
       numEdgesLimitedBFSk = Utils.numEdgesTraversed;
 
       if (shortestPathLength > 0 && limitedBFSkPathLength > 0) {
         numEdgesShortestPathSum += numEdgesShortestPath;
         numEdgesLimitedBFSkSum += numEdgesLimitedBFSk;
         numAbleToFindPath++;
+
+        System.out.println(src + "," + dst + "," + numEdgesShortestPath + "," + timeForBiDirSSSDSP + "," +
+          numEdgesLimitedBFSk + "," + timeForLimitedBFSk);
 
         if (limitedBFSkPathLength - shortestPathLength >= 0) {
           differences[limitedBFSkPathLength - shortestPathLength]++;
@@ -251,11 +242,12 @@ public class NeighborStats {
         numLimitedBFSkNotFindPath++;
       }
 
-      System.out.println("(" + src + "->" + dst + ") #Edges Traversed (BFS, BFS-k): ("
-        + numEdgesShortestPath + ", " + numEdgesLimitedBFSk + ")");
+//      System.out.println("(" + src + "->" + dst + ") #Edges Traversed (BFS, BFS-k): ("
+//        + numEdgesShortestPath + ", " + numEdgesLimitedBFSk + ")");
     }
 
     System.out.println("#queries BFS-k unable to find a path: " + numLimitedBFSkNotFindPath);
+    System.out.println("#queries both BFS & BFS-k able to find a path: " + numAbleToFindPath);
     System.out.println("totalTimeForBiDirSSSDSP: " + totalTimeForBiDirSSSDSP +
       ", totalTimeForLimitedBFSk: " + totalTimeForLimitedBFSk);
     System.out.println("Avg #Edges Traversed (BFS, BFS-k): (" + (1.0 * numEdgesShortestPathSum / numAbleToFindPath) +
