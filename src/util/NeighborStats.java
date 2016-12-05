@@ -1,5 +1,6 @@
 package util;
 
+import javax.rmi.CORBA.Util;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -163,6 +164,23 @@ public class NeighborStats {
       kNeighborsGraph = Utils.getKParentFreqNeighborsGraph(graph, parentHistogram, kForLimitedBFS);
     } else if (neighborSelectionMethod.equals(Constants.DEGREE)) {
       kNeighborsGraph = Utils.getKHighestDegreeNeighborsGraph(graph, kForLimitedBFS);
+    } else if (neighborSelectionMethod.equals(Constants.BC)) {
+      BCBFSData bcBfsData;
+      BCBFSData.initializeBCScores(graph.length);
+      int source;
+      int sampleSize = 0;
+
+      while (BCBFSData.BCGlobalSum < 5 * graph.length) {
+        sampleSize++;
+        source = random.nextInt(graph.length);
+        bcBfsData = BFSImplementations.getBCBFSTree(graph, source);
+        bcBfsData.calculateBCScore();
+      }
+
+      for (int i = 0; i < graph.length; ++i) {
+        BCBFSData.BCVertexRunningSum[i] = (BCBFSData.BCVertexRunningSum[i] / sampleSize) * graph.length;
+      }
+      kNeighborsGraph = Utils.getKHighestBCScoresNeighborsGraph(graph, kForLimitedBFS);
     } else {
       System.out.println("ERROR: Invalid neighbor selection method");
       return;

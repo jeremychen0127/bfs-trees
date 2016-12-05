@@ -1,5 +1,6 @@
 package util;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 
 import util.graph.AbstractGraph;
@@ -45,6 +46,55 @@ public class BFSImplementations {
   
   public static int[] getParallelBFSDistances(AbstractGraph graph, int source, int pL) {
     return new ParallelBFSRunner(graph, source, pL).computeBFSInParallel();
+  }
+
+  public static BCBFSData getBCBFSTree(int[][] graph, int source) {
+    LinkedList<Integer> bfsQueue = new LinkedList<Integer>();
+    bfsQueue.add(source);
+    BCBFSData bcbfsData = new BCBFSData(graph.length, source);
+
+    bcbfsData.initializeBFSData(graph.length);
+    bcbfsData.level.set(source, 0);
+    ArrayList<Integer> levelZero = new ArrayList<>();
+    levelZero.add(source);
+    bcbfsData.verticesOnLevel.add(levelZero);
+    bcbfsData.numShortestPaths.set(source, 1);
+
+    int nextVertex, currentLevel;
+    while (!bfsQueue.isEmpty()) {
+      nextVertex = bfsQueue.remove();
+      currentLevel = bcbfsData.level.get(nextVertex);
+
+      for (int neighbor: graph[nextVertex]) {
+        if (bcbfsData.level.get(neighbor) == -1) {
+          bfsQueue.add(neighbor);
+          bcbfsData.numVertices++;
+          bcbfsData.level.set(neighbor, currentLevel + 1);
+
+          // add to corresponding level set
+          while (bcbfsData.verticesOnLevel.size() - 1 < currentLevel + 1) {
+            bcbfsData.verticesOnLevel.add(new ArrayList<Integer>());
+          }
+          bcbfsData.verticesOnLevel.get(currentLevel + 1).add(neighbor);
+
+          // add nextVertex as a parent
+          if (bcbfsData.parents.get(neighbor) == null) {
+            bcbfsData.parents.set(neighbor, new ArrayList<Integer>());
+          }
+          bcbfsData.parents.get(neighbor).add(nextVertex);
+
+          bcbfsData.numShortestPaths.set(neighbor, 1);
+        } else if (bcbfsData.level.get(neighbor) > bcbfsData.level.get(nextVertex)) {
+          // add nextVertex as another parent
+          bcbfsData.parents.get(neighbor).add(nextVertex);
+
+          // increment number of shortest paths from source to this neighbor
+          bcbfsData.numShortestPaths.set(neighbor, bcbfsData.numShortestPaths.get(neighbor) + 1);
+        }
+      }
+    }
+
+    return bcbfsData;
   }
   
   public static SimpleBFSData getBFSTree(int[][] graph, int source) {
