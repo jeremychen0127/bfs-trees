@@ -3,6 +3,7 @@ package util;
 import javax.rmi.CORBA.Util;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.net.Inet4Address;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
@@ -24,13 +25,21 @@ public class NeighborStats {
       System.out.println(Constants.RANDOM + ", " + Constants.PARENT_FREQ + ", " + Constants.DEGREE);
       return;
     }
-    boolean isDirectedGraph = Boolean.parseBoolean(args[6]);
+    int numSamples = -1;
+    boolean isDirectedGraph;
+    if (neighborSelectionMethod.equals(Constants.BC)) {
+      numSamples = Integer.parseInt(args[6]);
+      isDirectedGraph = Boolean.parseBoolean(args[7]);
+    } else {
+      isDirectedGraph = Boolean.parseBoolean(args[6]);
+    }
     System.out.println("graphFile:" + graphFile);
     System.out.println("numHighDegreeBFSTrees:" + numHighDegreeBFSTrees);
     System.out.println("numRandomBFSTrees:" + numRandomBFSTrees);
     System.out.println("numTrials: " + numTrials);
     System.out.println("kForLimitedBFS: " + kForLimitedBFS);
     System.out.println("neighborSelectionMethod: " + neighborSelectionMethod);
+    System.out.println("numSampleSourcesForBC: " + numSamples);
     System.out.println("directed: " + isDirectedGraph);
     long startTime = System.currentTimeMillis();
     int[][] graph = Utils.getGraph(graphFile);
@@ -41,7 +50,7 @@ public class NeighborStats {
     long endTime = System.currentTimeMillis();
     System.out.println("TIME TAKEN TO PARSE THE GRAPH: " + ((endTime - startTime)/1000));
 
-    Random random = new Random(0);
+    Random random = new Random(5);
 
     SimpleBFSData[] bfsTrees = null;
     SimpleBFSData[] revBfsTrees = null;
@@ -170,12 +179,14 @@ public class NeighborStats {
       int source;
       int sampleSize = 0;
 
-      while (BCBFSData.BCGlobalSum < 5 * graph.length) {
+      while (sampleSize < numSamples) {
         sampleSize++;
         source = random.nextInt(graph.length);
         bcBfsData = BFSImplementations.getBCBFSTree(graph, source);
         bcBfsData.calculateBCScore();
       }
+
+      System.out.println("sample size:" + sampleSize);
 
       for (int i = 0; i < graph.length; ++i) {
         BCBFSData.BCVertexRunningSum[i] = (BCBFSData.BCVertexRunningSum[i] / sampleSize) * graph.length;
@@ -205,6 +216,8 @@ public class NeighborStats {
     int[] bwBfsLevels = new int[graph.length];
     ArrayBlockingQueue<Integer> fwBfsQueue = null;
     ArrayBlockingQueue<Integer> bwBfsQueue = null;
+
+    random = new Random(0);
 
     System.out.println("src,dst,BFS #Edges Traversed,BFS Processing Time,BFS-k #Edges Traversed,BFS-k Processing Time");
 
