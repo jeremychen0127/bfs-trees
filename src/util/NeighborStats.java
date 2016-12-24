@@ -6,6 +6,7 @@ import java.lang.reflect.Array;
 import java.net.Inet4Address;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
@@ -208,10 +209,10 @@ public class NeighborStats {
     long totalTimeForLimitedBFSk = 0;
     long timeForBiDirSSSDSP = 0;
     long timeForLimitedBFSk = 0;
-    int[] differences = new int[10];
-    for (int j = 0; j < differences.length; ++j) {
-      differences[j] = 0;
-    }
+    ArrayList<Integer> differences = new ArrayList<>();
+//    for (int j = 0; j < differences.length; ++j) {
+//      differences[j] = 0;
+//    }
     int[] fwBfsLevels = new int[graph.length];
     int[] bwBfsLevels = new int[graph.length];
     ArrayBlockingQueue<Integer> fwBfsQueue = null;
@@ -264,7 +265,11 @@ public class NeighborStats {
           numEdgesLimitedBFSk + "," + timeForLimitedBFSk);
 
         if (limitedBFSkPathLength - shortestPathLength >= 0) {
-          differences[limitedBFSkPathLength - shortestPathLength]++;
+          while (limitedBFSkPathLength - shortestPathLength > differences.size() - 1) {
+            differences.add(0);
+          }
+          differences.set(limitedBFSkPathLength - shortestPathLength,
+            differences.get(limitedBFSkPathLength - shortestPathLength) + 1);
         } else {
           System.out.println("ERROR: limited BFS-k found a shorter path (" +
             limitedBFSkPathLength + ", " + shortestPathLength + ")");
@@ -284,8 +289,8 @@ public class NeighborStats {
     System.out.println("Avg #Edges Traversed (BFS, BFS-k): (" + (1.0 * numEdgesShortestPathSum / numAbleToFindPath) +
       ", " + (1.0 * numEdgesLimitedBFSkSum / numAbleToFindPath) + ")");
 
-    for (int k = 0; k < differences.length; ++k) {
-      System.out.println("Difference " + k + ": " + differences[k]);
+    for (int k = 0; k < differences.size(); ++k) {
+      System.out.println("Difference " + k + ": " + differences.get(k));
     }
   }
 }
