@@ -12,8 +12,10 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ArrayBlockingQueue;
 
@@ -664,6 +666,31 @@ public class Utils {
     }
 
     return parentHistogram;
+  }
+
+  public static double calculateCorrelation(int[][] graph1, int[][] graph2) {
+    Set<Integer> graph1Set;
+    Set<Integer> graph2Set;
+    int sumCommon = 0;
+    int totalNumTopNeighbors = 0;
+    for (int i = 0; i < graph1.length; ++i) {
+      graph1Set = new HashSet<>();
+      graph2Set = new HashSet<>();
+
+      for (int j = 0; j < graph1[i].length; ++j) {
+        graph1Set.add(graph1[i][j]);
+      }
+
+      for (int j = 0; j < graph2[i].length; ++j) {
+        graph2Set.add(graph2[i][j]);
+      }
+
+      graph1Set.retainAll(graph2Set);
+      sumCommon += graph1Set.size();
+      totalNumTopNeighbors += graph1[i].length;
+    }
+
+    return 1.0 * sumCommon / totalNumTopNeighbors;
   }
 
   public static void dumpGraph(int[][] graph) {
