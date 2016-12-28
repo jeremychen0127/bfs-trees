@@ -32,8 +32,10 @@ public class VertexDegreeAndBCCorrelation {
       BCBFSData.BCVertexRunningSum[i] = (BCBFSData.BCVertexRunningSum[i] / sampleSize) * graph.length;
     }
     int[][] BCScoreNeighborGraph = Utils.getKHighestBCScoresNeighborsGraph(graph, kForLimitedBFS);
+    System.out.println("BC score neighbor graph constructed");
 
     int[][] VertexDegreeNeighborGraph = Utils.getKHighestDegreeNeighborsGraph(graph, kForLimitedBFS);
+    System.out.println("Vertex degree neighbor graph constructed");
 
     double correlation = Utils.calculateCorrelation(BCScoreNeighborGraph, VertexDegreeNeighborGraph);
 
