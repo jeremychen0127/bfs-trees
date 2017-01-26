@@ -12,8 +12,10 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ArrayBlockingQueue;
 
@@ -36,14 +38,14 @@ public class Utils {
     BufferedReader br = new BufferedReader(new InputStreamReader(in));
     return br;
   }
-  
+
   public static BufferedWriter getBufferedWriter(String fileName) throws FileNotFoundException {
     FileOutputStream fstream = new FileOutputStream(fileName);
     DataOutputStream in = new DataOutputStream(fstream);
     BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(in));
     return bw;
   }
-  
+
   public static int getMaxID(String inputFile) throws NumberFormatException, IOException {
     BufferedReader br = getBufferedReader(inputFile);
     String strLine;
@@ -69,7 +71,7 @@ public class Utils {
 //    System.out.println("MaxID: " + maxID);
     return maxID;
   }
-  
+
   public static void permuteGraph(int[][] graph) {
     Random random = new Random();
     for (int i = 0; i < graph.length; ++i) {
@@ -83,18 +85,18 @@ public class Utils {
       }
     }
   }
-  
+
   public static LargeCRSGraph getCRSGraph(String fileName) throws NumberFormatException, IOException {
     int[][] graph = getGraph(fileName);
     return new LargeCRSGraph(graph);
   }
-  
+
   public static int[][] getGraph(String fileName) throws NumberFormatException, IOException {
     int maxID = getMaxID(fileName);
     int[][] graph = new int[maxID + 1][];
     int[] degrees = new int[maxID + 1];
     long numEdges = 0;
-    for (int i = 0; i < degrees.length; ++i) { degrees[i] = 0; graph[i] = new int[0];} 
+    for (int i = 0; i < degrees.length; ++i) { degrees[i] = 0; graph[i] = new int[0];}
     BufferedReader br = getBufferedReader(fileName);
     String strLine;
     int src, dst, srcDegree, newDegreeSize;
@@ -106,7 +108,7 @@ public class Utils {
       numLinesRead++;
       if ((numLinesRead % 100000) == 0) {
         long endTime = System.currentTimeMillis();
-        System.out.println("Read " + numLinesRead + "th line. Time Taken: " 
+        System.out.println("Read " + numLinesRead + "th line. Time Taken: "
           + ((endTime - startTime)/1000) + " seconds.");
         startTime = System.currentTimeMillis();
       }
@@ -136,7 +138,7 @@ public class Utils {
       }
       degrees[src] += split.length - 1;
     }
-    
+
     int maxDegree = Integer.MIN_VALUE;
     for (int i = 0; i < graph.length; ++i) {
       int[] finalNbrs = new int[degrees[i]];
@@ -177,7 +179,7 @@ public class Utils {
 
     return reversedGraph;
   }
-  
+
   public static int getMaxDegreeVertex(int[][] graph) {
     int maxDegreeVertex = -1;
     int maxDegree = Integer.MIN_VALUE;
@@ -190,7 +192,7 @@ public class Utils {
     System.out.println("Max Degree Vertex: " + maxDegreeVertex + " maxDegree:" + maxDegree);
     return maxDegreeVertex;
   }
-  
+
   public static int distanceInBFSTree(SimpleBFSData bfsData, int source, int destination) {
     int currentLevelOfSrc = bfsData.bfsLevel[source];
     int currentParentOfSrc = bfsData.bfsParent[source];
@@ -222,12 +224,12 @@ public class Utils {
       return length;
     }
 //    System.out.println("currentParentOfV: " + currentParentOfV + " currentParentOfNbr: " + currentParentOfNbr);
-    
+
     while(currentParentOfSrc != currentParentOfDest) {
 //      System.out.println("Trying to find lowest ancestor. currentParentOfSrc: " +currentParentOfSrc
 //        + " currentParentOfDest: " + currentParentOfDest);
       length += 2;
-      currentParentOfSrc = bfsData.bfsParent[currentParentOfSrc];      
+      currentParentOfSrc = bfsData.bfsParent[currentParentOfSrc];
       currentParentOfDest = bfsData.bfsParent[currentParentOfDest];
     }
     return length + 2;
@@ -325,7 +327,7 @@ public class Utils {
 //  }
 
   // pL: parallelismLevel
-  
+
   public static int getSSSDSPOneDirBFS(int[][] graph, int source, int destination) {
     int[] bfsLevels = new int[graph.length];
     for (int i = 0; i < graph.length; ++i) {
@@ -364,7 +366,7 @@ public class Utils {
       bwBfsLevels[i] = -1;
     }
   }
-  
+
   public static int getSSSDSPBiDirBFS(int[][] graph, int[] fwBfsLevels, int[] bwBfsLevels, ArrayBlockingQueue<Integer> fwBfsQueue,
                                       ArrayBlockingQueue<Integer> bwBfsQueue, int src, int dest) {
     fwBfsQueue.add(src);
@@ -529,14 +531,40 @@ public class Utils {
       }
     }
 
-//    for (int i = 0; i < kHighestDegreeNeighborsGraph.length; ++i) {
-//      System.out.print(i + " ");
-//      for (int j = 0; j < kHighestDegreeNeighborsGraph[i].length; ++j) {
-//        System.out.print(kHighestDegreeNeighborsGraph[i][j] + " ");
-//      }
-//      System.out.println();
-//    }
     return kHighestDegreeNeighborsGraph;
+  }
+
+  public static int[][] getKHighestBCScoresNeighborsGraph(int[][] graph, int k) {
+    int[][] kHighestBCScoresNeighborsGraph = new int[graph.length][];
+    int[] neighbors;
+    Pair[] idBCScores;
+    Pair.ScoreComparator BCScoreComparator = new Pair.ScoreComparator();
+
+    for (int v = 0; v < graph.length; ++v) {
+      if (v > 0 && (v % 1000000) == 0) {
+        System.out.println("Processing " + v + "th vertex for creating k BC neighbors graph");
+      }
+
+      neighbors = new int[graph[v].length];
+      System.arraycopy(graph[v], 0, neighbors, 0, graph[v].length);
+      if (neighbors.length <= k) {
+        kHighestBCScoresNeighborsGraph[v] = neighbors;
+      } else {
+        idBCScores = new Pair[neighbors.length];
+        for (int i = 0; i < neighbors.length; ++i) {
+          idBCScores[i] = new Pair(neighbors[i], BCBFSData.BCVertexRunningSum[neighbors[i]]);
+        }
+        Arrays.sort(idBCScores, BCScoreComparator);
+
+        int[] kHighestBCScores = new int[k];
+        for (int i = 0; i < k; ++i) {
+          kHighestBCScores[i] = idBCScores[neighbors.length - 1 - i].id;
+        }
+        kHighestBCScoresNeighborsGraph[v] = kHighestBCScores;
+      }
+    }
+
+    return kHighestBCScoresNeighborsGraph;
   }
 
   public static boolean contains(int[] array, int value) {
@@ -639,7 +667,32 @@ public class Utils {
 
     return parentHistogram;
   }
-  
+
+  public static double calculateCorrelation(int[][] graph1, int[][] graph2) {
+    Set<Integer> graph1Set;
+    Set<Integer> graph2Set;
+    int sumCommon = 0;
+    int totalNumTopNeighbors = 0;
+    for (int i = 0; i < graph1.length; ++i) {
+      graph1Set = new HashSet<>();
+      graph2Set = new HashSet<>();
+
+      for (int j = 0; j < graph1[i].length; ++j) {
+        graph1Set.add(graph1[i][j]);
+      }
+
+      for (int j = 0; j < graph2[i].length; ++j) {
+        graph2Set.add(graph2[i][j]);
+      }
+
+      graph1Set.retainAll(graph2Set);
+      sumCommon += graph1Set.size();
+      totalNumTopNeighbors += graph1[i].length;
+    }
+
+    return 1.0 * sumCommon / totalNumTopNeighbors;
+  }
+
   public static void dumpGraph(int[][] graph) {
     for (int i = 0; i < graph.length; ++i) {
       System.out.print("" + i);
@@ -649,7 +702,7 @@ public class Utils {
       System.out.println();
     }
   }
-  
+
   public static int[] getPermutedIDs(int length) {
     int[] permutedIDs = new int[length];
     for (int i = 0; i < length; ++i) {
@@ -667,7 +720,7 @@ public class Utils {
   }
 
   public static void saveIsConsistentFile(byte[] consistencyArray, String isConsistentFilesDir,
-    String graphName, int consistencyFileIndex)
+                                          String graphName, int consistencyFileIndex)
     throws IOException {
     String isConsistentFileName = isConsistentFilesDir + "/"
       + graphName.substring(0, graphName.length() - 4) + "-" + consistencyFileIndex + ".txt";
@@ -679,7 +732,7 @@ public class Utils {
     bw.write("\n");
     bw.close();
   }
-  
+
   public static void busySleep(long nanos)
   {
     long elapsed;
@@ -688,7 +741,7 @@ public class Utils {
       elapsed = System.nanoTime() - startTime;
     } while (elapsed < nanos);
   }
-  
+
 
   public static void saveGraph(int[][] graph, String outputFile) throws FileNotFoundException,
     IOException {
@@ -705,7 +758,7 @@ public class Utils {
     }
     bw.close();
   }
-  
+
   public enum BFSColor {
     UNVISITED,
     VISITED,
